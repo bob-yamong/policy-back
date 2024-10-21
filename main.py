@@ -7,13 +7,14 @@ from sqlalchemy.orm import Session
 # from database import engine, models
 from routes import routers
 
+API_VERSION = "v1"
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # models.Base.metadata.create_all(bind=engine)
     yield
 
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(root_path=f"/api/{API_VERSION}", lifespan=lifespan)
 
 for router in routers:
     app.include_router(router)
