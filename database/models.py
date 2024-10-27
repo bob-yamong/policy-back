@@ -4,7 +4,9 @@ from sqlalchemy import BigInteger, Column, DateTime, ForeignKeyConstraint, Integ
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
-Base = declarative_base()
+from databse.database import project_base
+
+Base = project_base
 
 
 class Policy(Base):
