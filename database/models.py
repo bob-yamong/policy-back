@@ -4,9 +4,18 @@ from sqlalchemy import BigInteger, Column, DateTime, ForeignKeyConstraint, Integ
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
-from databse.database import project_base
+Base = declarative_base()
 
-Base = project_base
+
+class Heartbeat(Base):
+    __tablename__ = 'Heartbeat'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='Heartbeat_pkey'),
+    )
+
+    id = mapped_column(BigInteger)
+    ip = mapped_column(String(255), nullable=False)
+    timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
 
 class Policy(Base):
