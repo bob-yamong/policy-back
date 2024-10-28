@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 from sqlalchemy.orm import Session
 
-from schema import server_schema
+from schema import server_schema, heartbeat_schema
 from database.database import get_db
 from crud import server_crud
 
@@ -57,4 +57,16 @@ def delete_server(server_id: int, db:Session=Depends(get_db)) -> None:
             db (Session, optional): 서버에서 추가되는 db DI 정보입니다. Defaults to Depends(get_db).
     """
     server_crud.delete_server(db, server_id)
+    return
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+def add_heartbeat(heartbeat: heartbeat_schema.Heartbeat, db:Session=Depends(get_db)) -> None:
+    """
+    서버의 현재 상태를 기록합니다.
+
+        Args:
+            heartbeat (heartbeat_schema.Heartbeat): 서버의 상태 정보로 ip, status를 포함합니다.
+            db (_type_, optional): 서버에서 DI하는 정보입니다. Defaults to Depends(get_db).
+    """
+    server_crud.add_heartbeat(db, heartbeat)
     return

@@ -1,8 +1,11 @@
 from sqlalchemy.orm import Session
 
 from schema import server_schema
+from schema import heartbeat_schema
 from database import models
 
+def get_server_info_from_ip(db: Session, ip: str) -> models.Server | None:
+    return db.query(models.Server).filter(models.Server.ip == ip).first()
 
 def create_server(db: Session, server: server_schema.Server) -> server_schema.ServerInfo:
     insert_data = models.Server(
@@ -48,6 +51,23 @@ def get_server_list(db: Session) -> server_schema.ServerList:
 
 def delete_server(db: Session, server_id: int) -> None:
     db.query(models.Server).filter(models.Server.id == server_id).delete()
+    db.commit()
+    
+    return
+
+def add_heartbeat(db: Session, heartbeat: heartbeat_schema.Heartbeat):
+    if get_server_info_from_ip(db, heartbeat.ip):
+       create_server(db, server_schema.Server(
+           ip = heartbeat.ip,
+           name = str(heartbeat.ip)
+       ))
+    
+    insert_data = models.Heartbeat(
+        ip = heartbeat.ip,
+        survival_container_cnt = len(heartbeat.survival_container)
+    )
+    
+    db.add(insert_data)
     db.commit()
     
     return
