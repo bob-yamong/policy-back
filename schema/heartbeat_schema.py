@@ -6,6 +6,7 @@ class HealthCheckContainer(BaseModel):
     name: str
     pid: int
     mnt: int
+    cgroup: int
     
 class Heartbeat(BaseModel):
     ip: str

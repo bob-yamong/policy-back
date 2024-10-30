@@ -3,32 +3,50 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 
+from schema import container_schema
+from crud import container_crud
+
 
 router = APIRouter(
     prefix="/container",
     tags=["Container"]
 )
 
-# SSE
-@router.get("/{container_id}/logs")
-def get_container_sse(container_id: int):
-    return {"container": container_id}
+# Create
+@router.post("/")
+def add_container(data: container_schema.BaseContainer) -> container_schema.ContainerAddRes:
+    """
+    새로운 컨테이너를 추가합니다
 
-# health check
-@router.get("/health/{container_id}")
-def get_container_health(container_id: int):
-    return {"container": container_id}
+        Args:
+            data (container_schema.BaseContainer): 추가할 컨테이너 정보
 
-@router.get("/health")
-def get_container_health():
-    return {"": container_id}
+        Returns:
+            container_schema.ContainerAddRes: 추가된 컨테이너 정보
+    """
+    
+    return container_crud.add_container(data)
 
 # Read
-@router.get("/")
-def get_container_list():
-    return {"container": "list"}
 
-@router.get("/{container_id}")
-def get_container(container_id: int):
-    return {"container": container_id}
+# Update
+@router.put("/tag", status_code=status.HTTP_205_RESET_CONTENT)
+def update_container_tag(data: container_schema.ContainerTagUpdate) -> None:
+    """컨테이너에 태그 정보를 변경합니다
 
+    Args:
+        data (container_schema.ContainerTagUpdate): _description_
+    """
+    container_crud.update_container_tag(data)
+
+
+@router.patch("/tag", status_code=status.HTTP_206_PARTIAL_CONTENT)
+def add_container_tag(data: container_schema.ContainerTagUpdate) -> None:
+    """컨테이너에 태그 정보를 추가합니다
+
+    Args:
+        data (container_schema.ContainerTagUpdate): _description_
+    """
+    container_crud.add_container_tag(data)
+
+# Delete
