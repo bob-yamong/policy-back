@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from schema import container_schema
+from schema import container_schema, server_schema
+from crud import server_crud
 from database import models
 
 def get_tag_id_set(db: Session, tag_list: list[str]) -> set:
@@ -23,7 +24,16 @@ def get_tag_id_set(db: Session, tag_list: list[str]) -> set:
     
 
 def add_container(db:Session, container: container_schema.BaseContainer) -> container_schema.ContainerAddRes:
-    db.add(models.Container(**container))
+    host_server = db.query(models.HostServer).filter(models.HostServer.ip == container.host_server).first().id
+    
+    if host_server is None:
+        host_server = server_crud.create_server(db, server_schema.Server(ip=container.host_server, name=container.host_server)).id
+    
+    db.add(models.Container(
+        host_server=host_server,
+        runtime=container.runtime,
+        name=container.name
+    ))
     db.flush()
     db.refresh(container)
     db.commit()

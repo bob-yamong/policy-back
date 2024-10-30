@@ -28,6 +28,20 @@ def add_container(data: container_schema.BaseContainer) -> container_schema.Cont
     return container_crud.add_container(data)
 
 # Read
+@router.get("/{server_id}")
+def container_info_to_server(server_id: int) -> container_schema.ContainerInfo:
+    """
+    서버에 저장된 컨테이너 정보를 가져옵니다
+
+        Args:
+            server_id (int): servrer_id
+
+        Returns:
+            container_schema.ContainerInfo: 서버에 속한 컨테이너 정보
+    """
+    
+    return container_crud.get_container_info(server_id)
+
 
 # Update
 @router.put("/tag", status_code=status.HTTP_205_RESET_CONTENT)
