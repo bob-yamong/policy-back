@@ -1,12 +1,13 @@
-from typing import List, Optional
+from typing import List
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, text
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, Table, text
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
 from database.database import project_base
 
 Base = project_base
+metadata = Base.metadata
 
 
 class Heartbeat(Base):
@@ -19,6 +20,7 @@ class Heartbeat(Base):
     ip = mapped_column(String(255), nullable=False)
     timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     survival_container_cnt = mapped_column(Integer, nullable=False, server_default=text('0'))
+    req_ip = mapped_column(String(255), nullable=False)
 
 
 class Policy(Base):
@@ -56,16 +58,14 @@ class Tag(Base):
     id = mapped_column(BigInteger)
     name = mapped_column(String(255), nullable=False)
 
-    Container: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='Tag_')
+    container: Mapped['Container'] = relationship('Container', secondary='Container_tag', back_populates='tag')
 
 
 class Container(Base):
     __tablename__ = 'Container'
     __table_args__ = (
         ForeignKeyConstraint(['host_server'], ['Server.id'], name='FK__Server'),
-        ForeignKeyConstraint(['tag'], ['Tag.id'], name='FK_Container_Tag'),
-        PrimaryKeyConstraint('id', name='Container_pkey'),
-        Index('idx_host_pid_mnt', 'host_server', 'pid_id', 'mnt_id')
+        PrimaryKeyConstraint('id', name='Container_pkey')
     )
 
     host_server = mapped_column(BigInteger, nullable=False)
@@ -73,10 +73,35 @@ class Container(Base):
     name = mapped_column(String(255), nullable=False)
     create_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     id = mapped_column(BigInteger)
-    pid_id = mapped_column(Integer)
-    mnt_id = mapped_column(Integer)
-    tag = mapped_column(BigInteger)
-    remove_at = mapped_column(DateTime(True))
 
     Server_: Mapped['Server'] = relationship('Server', back_populates='Container')
-    Tag_: Mapped[Optional['Tag']] = relationship('Tag', back_populates='Container')
+    tag: Mapped['Tag'] = relationship('Tag', secondary='Container_tag', back_populates='container')
+    InternalContainerId: Mapped[List['InternalContainerId']] = relationship('InternalContainerId', uselist=True, back_populates='container')
+
+
+t_Container_tag = Table(
+    'Container_tag', metadata,
+    Column('container_id', BigInteger, nullable=False),
+    Column('tag_id', BigInteger, nullable=False),
+    ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
+    ForeignKeyConstraint(['tag_id'], ['Tag.id'], name='FK__Tag'),
+    PrimaryKeyConstraint('container_id', 'tag_id', name='Container_tag_pkey')
+)
+
+
+class InternalContainerId(Base):
+    __tablename__ = 'InternalContainerId'
+    __table_args__ = (
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK_InternalContainerId_Container'),
+        PrimaryKeyConstraint('id', name='InternalContainerId_pkey'),
+        Index('container_id_pid_id_mnt_id_cgroup_id', 'container_id', 'pid_id', 'mnt_id', 'cgroup_id', unique=True)
+    )
+
+    id = mapped_column(BigInteger)
+    container_id = mapped_column(BigInteger, nullable=False)
+    pid_id = mapped_column(Integer, nullable=False)
+    mnt_id = mapped_column(Integer, nullable=False)
+    cgroup_id = mapped_column(Integer, nullable=False)
+    reg_time = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    container: Mapped['Container'] = relationship('Container', back_populates='InternalContainerId')
