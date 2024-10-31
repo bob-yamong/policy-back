@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from starlette import status
 from sqlalchemy.orm import Session
 
@@ -60,7 +60,7 @@ def delete_server(server_id: int, db:Session=Depends(get_db)) -> None:
     return
 
 @router.post("/heartbeat", status_code=status.HTTP_201_CREATED)
-def add_heartbeat(heartbeat: heartbeat_schema.Heartbeat, db:Session=Depends(get_db)) -> None:
+def add_heartbeat(req: Request, heartbeat: heartbeat_schema.Heartbeat, db:Session=Depends(get_db)) -> None:
     """
     서버의 현재 상태를 기록합니다.
 
@@ -69,4 +69,5 @@ def add_heartbeat(heartbeat: heartbeat_schema.Heartbeat, db:Session=Depends(get_
             db (_type_, optional): 서버에서 DI하는 정보입니다. Defaults to Depends(get_db).
     """
     server_crud.add_heartbeat(db, heartbeat)
-    return
+    
+    return req.client.host

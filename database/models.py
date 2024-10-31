@@ -79,15 +79,16 @@ class Container(Base):
     InternalContainerId: Mapped[List['InternalContainerId']] = relationship('InternalContainerId', uselist=True, back_populates='container')
 
 
-t_Container_tag = Table(
-    'Container_tag', metadata,
-    Column('container_id', BigInteger, nullable=False),
-    Column('tag_id', BigInteger, nullable=False),
-    ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
-    ForeignKeyConstraint(['tag_id'], ['Tag.id'], name='FK__Tag'),
-    PrimaryKeyConstraint('container_id', 'tag_id', name='Container_tag_pkey')
-)
+class ContainerTag(Base):
+    __tablename__ = 'Container_tag'
+    __table_args__ = (
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
+        ForeignKeyConstraint(['tag_id'], ['Tag.id'], name='FK__Tag'),
+        PrimaryKeyConstraint('container_id', 'tag_id', name='Container_tag_pkey')
+    )
 
+    container_id = mapped_column(BigInteger, nullable=False, primary_key=True)
+    tag_id = mapped_column(BigInteger, nullable=False, primary_key=True)
 
 class InternalContainerId(Base):
     __tablename__ = 'InternalContainerId'

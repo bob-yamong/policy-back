@@ -9,7 +9,8 @@ def get_server_info_from_ip(db: Session, ip: str) -> models.Server | None:
 
 def create_server(db: Session, server: server_schema.Server) -> server_schema.ServerInfo:
     insert_data = models.Server(
-        **server
+        ip=server.ip,
+        name=server.name
     )
     
     db.add(insert_data)
@@ -56,8 +57,9 @@ def delete_server(db: Session, server_id: int) -> None:
     return
 
 def add_heartbeat(db: Session, heartbeat: heartbeat_schema.Heartbeat):
-    if get_server_info_from_ip(db, heartbeat.ip):
-       create_server(db, server_schema.Server(
+    server = get_server_info_from_ip(db, heartbeat.ip) 
+    if not server:
+       server = create_server(db, server_schema.Server(
            ip = heartbeat.ip,
            name = str(heartbeat.ip)
        ))
