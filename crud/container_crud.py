@@ -97,9 +97,6 @@ def get_server_container_info(db: Session, server_id: int) -> container_schema.S
         )
         
         res.containers.append(container_info)
-        
-    res.cnt = len(res.containers)
-        
     
     return res
 

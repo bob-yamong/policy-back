@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, Table, text
+from sqlalchemy import ARRAY, BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, Table, text
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
@@ -8,7 +8,6 @@ from database.database import project_base
 
 Base = project_base
 metadata = Base.metadata
-
 
 class Heartbeat(Base):
     __tablename__ = 'Heartbeat'
@@ -65,7 +64,8 @@ class Container(Base):
     __tablename__ = 'Container'
     __table_args__ = (
         ForeignKeyConstraint(['host_server'], ['Server.id'], name='FK__Server'),
-        PrimaryKeyConstraint('id', name='Container_pkey')
+        PrimaryKeyConstraint('id', name='Container_pkey'),
+        Index('host_server_name', 'host_server', 'name', unique=True)
     )
 
     host_server = mapped_column(BigInteger, nullable=False)
@@ -79,16 +79,15 @@ class Container(Base):
     InternalContainerId: Mapped[List['InternalContainerId']] = relationship('InternalContainerId', uselist=True, back_populates='container')
 
 
-class ContainerTag(Base):
-    __tablename__ = 'Container_tag'
-    __table_args__ = (
-        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
-        ForeignKeyConstraint(['tag_id'], ['Tag.id'], name='FK__Tag'),
-        PrimaryKeyConstraint('container_id', 'tag_id', name='Container_tag_pkey')
-    )
+t_Container_tag = Table(
+    'Container_tag', metadata,
+    Column('container_id', BigInteger, nullable=False),
+    Column('tag_id', BigInteger, nullable=False),
+    ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
+    ForeignKeyConstraint(['tag_id'], ['Tag.id'], name='FK__Tag'),
+    PrimaryKeyConstraint('container_id', 'tag_id', name='Container_tag_pkey')
+)
 
-    container_id = mapped_column(BigInteger, nullable=False, primary_key=True)
-    tag_id = mapped_column(BigInteger, nullable=False, primary_key=True)
 
 class InternalContainerId(Base):
     __tablename__ = 'InternalContainerId'

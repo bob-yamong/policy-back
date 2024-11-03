@@ -60,7 +60,7 @@ def delete_server(server_id: int, db:Session=Depends(get_db)) -> None:
     return
 
 @router.post("/heartbeat", status_code=status.HTTP_201_CREATED)
-def add_heartbeat(req: Request, heartbeat: heartbeat_schema.Heartbeat, db:Session=Depends(get_db)) -> None:
+def add_heartbeat(req: Request, heartbeat: heartbeat_schema.InfoReq, db:Session=Depends(get_db)) -> None:
     """
     서버의 현재 상태를 기록합니다.
 
@@ -68,6 +68,6 @@ def add_heartbeat(req: Request, heartbeat: heartbeat_schema.Heartbeat, db:Sessio
             heartbeat (heartbeat_schema.Heartbeat): 서버의 상태 정보로 ip, status를 포함합니다.
             db (_type_, optional): 서버에서 DI하는 정보입니다. Defaults to Depends(get_db).
     """
-    server_crud.add_heartbeat(db, heartbeat)
+    server_crud.add_heartbeat(db, req, heartbeat)
     
     return req.client.host

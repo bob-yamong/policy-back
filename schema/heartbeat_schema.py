@@ -1,14 +1,84 @@
 from pydantic import BaseModel
+from datetime import datetime
 
+class ContainerCpu(BaseModel):
+    kernel_usage: float
+    online_cpus: int
+    usage_percent: float
+    user_usage: float
+
+class ContainerIo(BaseModel):
+    read_mb: float
+    write_mb: float
     
-class HealthCheckContainer(BaseModel):
-    runtime:str
-    name: str
-    pid: int
+class ContainerMemory(BaseModel):
+    active: float
+    cache: float
+    limit_mb: float
+    usage_mb: float
+    usage_percent: float
+    
+class ContainerNetwork(BaseModel):
+    errors: int
+    rx_mb: float
+    rx_packets: int
+    tx_mb: float
+    tx_packets: int
+    
+class ContainerStats(BaseModel):
+    cpu: ContainerCpu
+    io: ContainerIo
+    memory: ContainerMemory
+    network: ContainerNetwork
+    proc_cnt: int
+
+class Namespace(BaseModel):
     mnt: int
-    cgroup: int
+    pid: int
+
+class ContainerInfo(BaseModel):
+    cgroup_id: int
+    container_name: str
+    namespace: Namespace
+    runtime: str
+    stats: ContainerStats
+
+class HostCpu(BaseModel):
+    CPU_freq_MHz: float
+    CPU_logical_core: int
+    CPU_percent: float
+    CPU_physical_core: int
+    core_usage: list[float]
+
+class HostDisk(BaseModel):
+    read_MB: float
+    write_MB: float
     
-class Heartbeat(BaseModel):
-    ip: str
-    survival_container: list[HealthCheckContainer]
+class HostMemory(BaseModel):
+    available_mem_GB: float
+    mem_percent: float
+    swap_percent: float
+    swap_total_GB: float
+    swap_used_GB: float
+    total_mem_GB: float
+    used_mem_GB: float
+
+class HostNetwork(BaseModel):
+    recv_data_MB: float
+    recv_err: int
+    recv_packets: int
+    sent_data_MB: float
+    sent_err: int
+    sent_packets: int
     
+class HostInfo(BaseModel):
+    cpu: dict
+    disk: dict
+    memory: dict
+    network: dict
+    
+class InfoReq(BaseModel):
+    containers: list[ContainerInfo]
+    host: HostInfo
+    host_ip: str
+    timestamp: datetime
