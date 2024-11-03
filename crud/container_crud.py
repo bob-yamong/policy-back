@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from fastapi import HTTPException
 from starlette import status
 
@@ -53,10 +54,24 @@ def get_server_container_info(db: Session, server_id: int) -> container_schema.S
     if not server_check:
         raise HTTPException(status_code=404, detail="Server not found")
     
-    # get left join result container list from server_id and InternalContainerId
-    container_list = db.query(models.Container).filter(models.Container.host_server == server_id).all()
-    
-    print(container_list)
+    LatestInternalId = db.query(
+        models.InternalContainerId.container_id,
+        func.max(models.InternalContainerId.reg_time).label("max_reg_time")
+    ).group_by(models.InternalContainerId.container_id).subquery()
+
+    container_list = db.query(
+        models.Container,
+        models.InternalContainerId
+    ).outerjoin(
+        LatestInternalId,
+        models.Container.id == LatestInternalId.c.container_id
+    ).outerjoin(
+        models.InternalContainerId,
+        (models.Container.id == models.InternalContainerId.container_id) &
+        (models.InternalContainerId.reg_time == LatestInternalId.c.max_reg_time)
+    ).filter(
+        models.Container.host_server == server_id
+    ).all()
     
     if not container_list:
         return container_schema.ServerContainerInfoRes(cnt=0, containers=[])
@@ -64,16 +79,21 @@ def get_server_container_info(db: Session, server_id: int) -> container_schema.S
     res = container_schema.ServerContainerInfoRes(cnt=len(container_list), containers=[])
     
     for container in container_list:
-        container_tag_list = db.query(models.t_Container_tag).join(models.Container).filter(models.t_Container_tag.container_id == container.id).all()
+        container_tag_list = db.query(models.Tag).join(models.ContainerTag).filter(models.ContainerTag.container_id == container.Container.id).all()
+        
         tag_list = [tag.name for tag in container_tag_list]
         
         container_info = container_schema.ContainerInfo(
-            pid_id = container.InternalContainerId[0].pid_id,
-            mnt_id = container.InternalContainerId[0].mnt_id,
-            cgroup_id = container.InternalContainerId[0].cgroup_id,
+            id = container.Container.id,
+            host_server = container.Container.host_server,
+            runtime = container.Container.runtime,
+            name = container.Container.name,
+            pid_id = container.InternalContainerId.pid_id if container.InternalContainerId else None,
+            mnt_id = container.InternalContainerId.mnt_id if container.InternalContainerId else None,
+            cgroup_id = container.InternalContainerId.cgroup_id if container.InternalContainerId else None,
             tag = tag_list,
-            create_at = container.create_at,
-            req_time = container.InternalContainerId[0].req_time
+            create_at = container.Container.create_at,
+            req_time = container.InternalContainerId.reg_time if container.InternalContainerId else None
         )
         
         res.containers.append(container_info)
