@@ -7,7 +7,7 @@ class Server(BaseModel):
 class ServerInfo(Server):
     id: int
     create_at: datetime
-    last_heartbeat: datetime | None
+    last_heartbeat: datetime | None = None
     
 class ServerList(BaseModel):
     cnt: int    

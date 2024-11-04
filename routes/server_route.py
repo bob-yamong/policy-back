@@ -47,17 +47,17 @@ def get_server_list(db:Session=Depends(get_db)) -> server_schema.ServerList:
 
 # Update
 
-# Delete
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
-def delete_server(server_id: int, db:Session=Depends(get_db)) -> None:
-    """관리 서버에서 입력된 서버를 제거합니다
+# # Delete
+# @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+# def delete_server(server_id: int, db:Session=Depends(get_db)) -> None:
+#     """관리 서버에서 입력된 서버를 제거합니다
 
-        Args:
-            server_id (int): 제거할 서버 id
-            db (Session, optional): 서버에서 추가되는 db DI 정보입니다. Defaults to Depends(get_db).
-    """
-    server_crud.delete_server(db, server_id)
-    return
+#         Args:
+#             server_id (int): 제거할 서버 id
+#             db (Session, optional): 서버에서 추가되는 db DI 정보입니다. Defaults to Depends(get_db).
+#     """
+#     server_crud.delete_server(db, server_id)
+#     return
 
 @router.post("/heartbeat", status_code=status.HTTP_201_CREATED)
 def add_heartbeat(req: Request, heartbeat: heartbeat_schema.InfoReq, db:Session=Depends(get_db)) -> None:

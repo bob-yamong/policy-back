@@ -29,13 +29,13 @@ def create_server(db: Session, server: server_schema.Server) -> server_schema.Se
 def get_server_info(db: Session, server_id: int) -> server_schema.ServerInfo:
     server_info = db.query(models.Server).filter(models.Server.id == server_id).first()
     last_heartbeat = db.query(models.Heartbeat).filter(models.Heartbeat.ip == server_info.ip).order_by(models.Heartbeat.timestamp.desc()).first() 
-        
+    
     info_data = server_schema.ServerInfo(
         id=server_info.id,
         ip=server_info.ip,
         name=server_info.name,
         create_at=server_info.create_at,
-        last_heartbeat=last_heartbeat
+        last_heartbeat=last_heartbeat.timestamp if last_heartbeat else None
     )
     
     return info_data
