@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 # from database.database import engine
@@ -16,6 +17,18 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(root_path=f"/api/{API_VERSION}", lifespan=lifespan)
+
+origins = [
+    "*",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 for router in routers:
     app.include_router(router)
