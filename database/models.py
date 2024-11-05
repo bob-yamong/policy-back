@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import ARRAY, BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, JSON, PrimaryKeyConstraint, Sequence, SmallInteger, String, Table, text
+from sqlalchemy import ARRAY, BigInteger, Column, DateTime, Float, ForeignKeyConstraint, Index, Integer, JSON, PrimaryKeyConstraint, Sequence, SmallInteger, String, Table, text
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
@@ -92,6 +92,63 @@ class Container(Base):
     LsmProcPolicy: Mapped[List['LsmProcPolicy']] = relationship('LsmProcPolicy', uselist=True, back_populates='container')
     RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='container')
     TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='container')
+
+
+class SystemInfo(Base):
+    __tablename__ = 'SystemInfo'
+    __table_args__ = (
+        ForeignKeyConstraint(['server_id'], ['Server.id'], name='FK_SystemInfo_Server'),
+        PrimaryKeyConstraint('server_id', 'timestamp', name='SystemInfo_pkey')
+    )
+
+    server_id = mapped_column(BigInteger, nullable=False)
+    cpu_logic_core = mapped_column(SmallInteger, nullable=False)
+    cpu_physic_core = mapped_column(SmallInteger, nullable=False)
+    cpu_percent = mapped_column(Float, nullable=False)
+    cpu_core_useage = mapped_column(JSON, nullable=False)
+    mem_total = mapped_column(Float, nullable=False)
+    mem_used = mapped_column(Float, nullable=False)
+    mem_percent = mapped_column(Float, nullable=False)
+    disk_read_mb = mapped_column(Float, nullable=False)
+    disk_write_mb = mapped_column(Float, nullable=False)
+    disk_total = mapped_column(Float, nullable=False)
+    disk_used = mapped_column(Float, nullable=False)
+    dis_percent = mapped_column(Float, nullable=False)
+    net_recv_data_mb = mapped_column(Float, nullable=False)
+    net_send_data_mb = mapped_column(Float, nullable=False)
+    net_recv_packets = mapped_column(Integer, nullable=False)
+    net_send_packets = mapped_column(Integer, nullable=False)
+    net_recv_err = mapped_column(Integer, nullable=False)
+    net_send_err = mapped_column(Integer, nullable=False)
+    timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    server: Mapped['Server'] = relationship('Server', back_populates='SystemInfo')
+
+class ContainerSysInfo(Base):
+    __tablename__ = 'ContainerSysInfo'
+    __table_args__ = (
+        ForeignKeyConstraint(['container'], ['Container.id'], name='FK_ContainerSysInfo_Container'),
+        PrimaryKeyConstraint('container', 'timestamp', name='ContainerSysInfo_pkey')
+    )
+
+    container = mapped_column(BigInteger, nullable=False)
+    cpu_kernel = mapped_column(Float, nullable=False)
+    cpu_user = mapped_column(Float, nullable=False)
+    cpu_percent = mapped_column(Float, nullable=False)
+    cpu_online = mapped_column(Float, nullable=False)
+    disk_read_mb = mapped_column(Float, nullable=False)
+    disk_write_mb = mapped_column(Float, nullable=False)
+    mem_limit = mapped_column(Float, nullable=False)
+    mem_useage = mapped_column(Float, nullable=False)
+    mem_percent = mapped_column(Float, nullable=False)
+    net_recv_mb = mapped_column(Float, nullable=False)
+    net_send_mb = mapped_column(Float, nullable=False)
+    net_recv_packets = mapped_column(Integer, nullable=False)
+    net_send_packets = mapped_column(Integer, nullable=False)
+    proc_cnt = mapped_column(Integer, nullable=False)
+    timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    container_: Mapped['Container'] = relationship('Container', back_populates='ContainerSysInfo')
 
 
 class ContainerTag(Base):
