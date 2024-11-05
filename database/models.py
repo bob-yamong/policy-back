@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import ARRAY, BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, Table, text
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
@@ -8,6 +8,7 @@ from database.database import project_base
 
 Base = project_base
 metadata = Base.metadata
+
 
 class Heartbeat(Base):
     __tablename__ = 'Heartbeat'
@@ -26,18 +27,24 @@ class Policy(Base):
     __tablename__ = 'Policy'
     __table_args__ = (
         PrimaryKeyConstraint('id', name='Policy_pkey'),
+        Index('policy_name', 'name', unique=True)
     )
 
     id = mapped_column(BigInteger)
-    name = mapped_column(String(255))
+    name = mapped_column(String(255), nullable=False)
+    api_api_version = mapped_column(String(255), nullable=False)
     create_at = mapped_column(DateTime(True))
     update_at = mapped_column(DateTime(True))
+
+    RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='policy')
+    TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='poicy')
 
 
 class Server(Base):
     __tablename__ = 'Server'
     __table_args__ = (
         PrimaryKeyConstraint('id', name='Server_pkey'),
+        Index('ip', 'ip', unique=True)
     )
 
     id = mapped_column(BigInteger)
@@ -77,6 +84,8 @@ class Container(Base):
     Server_: Mapped['Server'] = relationship('Server', back_populates='Container')
     tag: Mapped['Tag'] = relationship('Tag', secondary='Container_tag', back_populates='container')
     InternalContainerId: Mapped[List['InternalContainerId']] = relationship('InternalContainerId', uselist=True, back_populates='container')
+    RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='container')
+    TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='container')
 
 
 class ContainerTag(Base):
@@ -101,9 +110,44 @@ class InternalContainerId(Base):
 
     id = mapped_column(BigInteger)
     container_id = mapped_column(BigInteger, nullable=False)
-    pid_id = mapped_column(Integer, nullable=False)
-    mnt_id = mapped_column(Integer, nullable=False)
-    cgroup_id = mapped_column(Integer, nullable=False)
+    pid_id = mapped_column(BigInteger, nullable=False)
+    mnt_id = mapped_column(BigInteger, nullable=False)
+    cgroup_id = mapped_column(BigInteger, nullable=False)
     reg_time = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
     container: Mapped['Container'] = relationship('Container', back_populates='InternalContainerId')
+
+
+class RawTracePointPolicy(Base):
+    __tablename__ = 'RawTracePointPolicy'
+    __table_args__ = (
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
+        ForeignKeyConstraint(['policy_id'], ['Policy.id'], name='FK__Policy'),
+        PrimaryKeyConstraint('id', name='RawTracePointPolicy_pkey'),
+        Index('container_id_state', 'container_id', 'state', unique=True)
+    )
+
+    id = mapped_column(BigInteger)
+    policy_id = mapped_column(BigInteger)
+    container_id = mapped_column(BigInteger)
+    state = mapped_column(String(4))
+
+    container: Mapped[Optional['Container']] = relationship('Container', back_populates='RawTracePointPolicy')
+    policy: Mapped[Optional['Policy']] = relationship('Policy', back_populates='RawTracePointPolicy')
+
+
+class TracepointPolicy(Base):
+    __tablename__ = 'TracepointPolicy'
+    __table_args__ = (
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK_TracepointPolicy_Container'),
+        ForeignKeyConstraint(['poicy_id'], ['Policy.id'], name='FK_TracepointPolicy_Policy'),
+        PrimaryKeyConstraint('id', name='TracepointPolicy_pkey')
+    )
+
+    id = mapped_column(BigInteger)
+    poicy_id = mapped_column(BigInteger, nullable=False)
+    container_id = mapped_column(BigInteger, nullable=False)
+    tracepoint = mapped_column(String(100), nullable=False)
+
+    container: Mapped['Container'] = relationship('Container', back_populates='TracepointPolicy')
+    poicy: Mapped['Policy'] = relationship('Policy', back_populates='TracepointPolicy')
