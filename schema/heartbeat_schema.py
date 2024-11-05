@@ -50,16 +50,19 @@ class HostCpu(BaseModel):
     CPU_physical_core: int
     core_usage: list[float]
 
+class HostDiskUsage(BaseModel):
+    free_GB: float
+    percent: float
+    total_GB: float
+    used_GB: float
+
 class HostDisk(BaseModel):
     read_MB: float
     write_MB: float
+    usage: HostDiskUsage
     
 class HostMemory(BaseModel):
-    available_mem_GB: float
     mem_percent: float
-    swap_percent: float
-    swap_total_GB: float
-    swap_used_GB: float
     total_mem_GB: float
     used_mem_GB: float
 
@@ -72,10 +75,10 @@ class HostNetwork(BaseModel):
     sent_packets: int
     
 class HostInfo(BaseModel):
-    cpu: dict
-    disk: dict
-    memory: dict
-    network: dict
+    cpu: HostCpu
+    disk: HostDisk
+    memory: HostMemory
+    network: HostNetwork
     
 class InfoReq(BaseModel):
     containers: list[ContainerInfo]

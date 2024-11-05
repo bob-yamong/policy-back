@@ -265,14 +265,14 @@ class TracepointPolicy(Base):
     __tablename__ = 'TracepointPolicy'
     __table_args__ = (
         ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK_TracepointPolicy_Container'),
-        ForeignKeyConstraint(['poicy_id'], ['Policy.id'], name='FK_TracepointPolicy_Policy'),
+        ForeignKeyConstraint(['policy_id'], ['Policy.id'], name='FK_TracepointPolicy_Policy'),
         PrimaryKeyConstraint('id', name='TracepointPolicy_pkey')
     )
 
     id = mapped_column(BigInteger)
-    poicy_id = mapped_column(BigInteger, nullable=False)
+    policy_id = mapped_column(BigInteger, nullable=False)
     container_id = mapped_column(BigInteger, nullable=False)
     tracepoint = mapped_column(String(100), nullable=False)
 
     container: Mapped['Container'] = relationship('Container', back_populates='TracepointPolicy')
-    poicy: Mapped['Policy'] = relationship('Policy', back_populates='TracepointPolicy')
+    policy: Mapped['Policy'] = relationship('Policy', back_populates='TracepointPolicy')
