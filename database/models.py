@@ -69,6 +69,7 @@ class Tag(Base):
 
     container: Mapped['Container'] = relationship('Container', secondary='Container_tag', back_populates='tag')
 
+
 class Container(Base):
     __tablename__ = 'Container'
     __table_args__ = (
@@ -92,7 +93,7 @@ class Container(Base):
     LsmProcPolicy: Mapped[List['LsmProcPolicy']] = relationship('LsmProcPolicy', uselist=True, back_populates='container')
     RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='container')
     TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='container')
-
+    ContainerSysInfo: Mapped[List['ContainerSysInfo']] = relationship('ContainerSysInfo', uselist=True, back_populates='container_')
 
 class SystemInfo(Base):
     __tablename__ = 'SystemInfo'
@@ -105,7 +106,7 @@ class SystemInfo(Base):
     cpu_logic_core = mapped_column(SmallInteger, nullable=False)
     cpu_physic_core = mapped_column(SmallInteger, nullable=False)
     cpu_percent = mapped_column(Float, nullable=False)
-    cpu_core_useage = mapped_column(JSON, nullable=False)
+    cpu_core_usage = mapped_column(JSON, nullable=False)
     mem_total = mapped_column(Float, nullable=False)
     mem_used = mapped_column(Float, nullable=False)
     mem_percent = mapped_column(Float, nullable=False)
@@ -127,11 +128,11 @@ class SystemInfo(Base):
 class ContainerSysInfo(Base):
     __tablename__ = 'ContainerSysInfo'
     __table_args__ = (
-        ForeignKeyConstraint(['container'], ['Container.id'], name='FK_ContainerSysInfo_Container'),
-        PrimaryKeyConstraint('container', 'timestamp', name='ContainerSysInfo_pkey')
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK_ContainerSysInfo_Container'),
+        PrimaryKeyConstraint('container_id', 'timestamp', name='ContainerSysInfo_pkey')
     )
 
-    container = mapped_column(BigInteger, nullable=False)
+    container_id = mapped_column(BigInteger, nullable=False)
     cpu_kernel = mapped_column(Float, nullable=False)
     cpu_user = mapped_column(Float, nullable=False)
     cpu_percent = mapped_column(Float, nullable=False)
@@ -139,7 +140,7 @@ class ContainerSysInfo(Base):
     disk_read_mb = mapped_column(Float, nullable=False)
     disk_write_mb = mapped_column(Float, nullable=False)
     mem_limit = mapped_column(Float, nullable=False)
-    mem_useage = mapped_column(Float, nullable=False)
+    mem_usage = mapped_column(Float, nullable=False)
     mem_percent = mapped_column(Float, nullable=False)
     net_recv_mb = mapped_column(Float, nullable=False)
     net_send_mb = mapped_column(Float, nullable=False)
@@ -148,7 +149,7 @@ class ContainerSysInfo(Base):
     proc_cnt = mapped_column(Integer, nullable=False)
     timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    container_: Mapped['Container'] = relationship('Container', back_populates='ContainerSysInfo')
+    container_: Mapped['Container'] = relationship('Container_id', back_populates='ContainerSysInfo')
 
 
 class ContainerTag(Base):
