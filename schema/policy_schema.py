@@ -43,6 +43,6 @@ class ContainerPolicy(BaseModel):
     policy: Policy
 
 class ContainerPolicyRes(BaseModel):
-    polices: list[ContainerPolicy]
+    policies: list[ContainerPolicy]
     
 # ==================== Policy Schema ====================

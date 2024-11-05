@@ -195,7 +195,7 @@ def get_container_policy(db:Session, server_id: int, container_id: int) -> polic
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Container not found")
     
     return {
-        "polices" : [
+        "policies" : [
             {
                 "api_version": "policy.yamong.com/v1",
                 "name": "multi-container-example-policy",
