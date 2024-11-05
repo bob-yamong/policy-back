@@ -40,7 +40,7 @@ class Policy(Base):
     LsmNetPolicy: Mapped[List['LsmNetPolicy']] = relationship('LsmNetPolicy', uselist=True, back_populates='policy')
     LsmProcPolicy: Mapped[List['LsmProcPolicy']] = relationship('LsmProcPolicy', uselist=True, back_populates='policy')
     RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='policy')
-    TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='poicy')
+    TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='policy')
 
 
 class Server(Base):
@@ -55,8 +55,8 @@ class Server(Base):
     name = mapped_column(String(255), nullable=False)
     created_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    Container: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='Server_')
-
+    containers: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='server')
+    SystemInfo: Mapped[List['SystemInfo']] = relationship('SystemInfo', uselist=True, back_populates='server')
 
 class Tag(Base):
     __tablename__ = 'Tag'
@@ -85,7 +85,7 @@ class Container(Base):
     id = mapped_column(BigInteger)
     removed_at = mapped_column(DateTime(True))
 
-    Server_: Mapped['Server'] = relationship('Server', back_populates='Container')
+    server: Mapped['Server'] = relationship('Server', back_populates='containers')
     tag: Mapped['Tag'] = relationship('Tag', secondary='Container_tag', back_populates='container')
     InternalContainerId: Mapped[List['InternalContainerId']] = relationship('InternalContainerId', uselist=True, back_populates='container')
     LsmFilePolicy: Mapped[List['LsmFilePolicy']] = relationship('LsmFilePolicy', uselist=True, back_populates='container')
@@ -93,7 +93,7 @@ class Container(Base):
     LsmProcPolicy: Mapped[List['LsmProcPolicy']] = relationship('LsmProcPolicy', uselist=True, back_populates='container')
     RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='container')
     TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='container')
-    ContainerSysInfo: Mapped[List['ContainerSysInfo']] = relationship('ContainerSysInfo', uselist=True, back_populates='container_')
+    ContainerSysInfo: Mapped[List['ContainerSysInfo']] = relationship('ContainerSysInfo', uselist=True, back_populates='container')
 
 class SystemInfo(Base):
     __tablename__ = 'SystemInfo'
@@ -149,7 +149,7 @@ class ContainerSysInfo(Base):
     proc_cnt = mapped_column(Integer, nullable=False)
     timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    container_: Mapped['Container'] = relationship('Container_id', back_populates='ContainerSysInfo')
+    container: Mapped['Container'] = relationship('Container', back_populates='ContainerSysInfo')
 
 
 class ContainerTag(Base):
