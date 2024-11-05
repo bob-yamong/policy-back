@@ -30,17 +30,48 @@ def get_server_stats(server_id: int, unit:heartbeat_schema.TimeUnit,
                     function_name: heartbeat_schema.funcList, 
                     db: Session=Depends(get_db)):
     """
-    서버의 최근 상태 정보를 반환합니다.
+    서버의 상태 정보를 반환합니다.
 
         Args:
-            server_id (int): 서버의 id를 입력합니다.
-            db (_type_, optional): 서버에서 DI하는 정보입니다. Defaults to Depends(get_db).
-            
-        Returns:
-            server_schema.ServerInfo: 서버의 상태 정보를 반환합니다.
-        
+            server_id (int): 상태를 반환받을 서버의 id를 입력합니다.
+            unit (heartbeat_schema.TimeUnit): 시간의 주기를 입력합니다.
+            function_name (heartbeat_schema.funcList): 어떤 함수를 사용할지 입력합니다.
+            db (Session, optional): Defaults to Depends(get_db).
+
         Raises:
             HTTPException: 404 - 서버를 찾을 수 없음
+            HTTPException: 422 - 잘못된 요청
+            HTTPException: 500 - 서버 내부 오류
+
+        Returns:
+            dict: 서버의 상태 정보를 반환합니다.
+            ex)
+            [
+                {
+                    "time": "2024-11-06T00:00:00+09:00",
+                    "cpu1": 22.775,
+                    "cpu2": 3.525,
+                    "cpu3": 5.7,
+                    "cpu4": 10.525,
+                    "cpu5": 2.525,
+                    "cpu6": 44.5,
+                    "cpu7": 46,
+                    "cpu8": 29.025,
+                    "cpu9": 5.8
+                },
+                {
+                    "time": "2024-11-06T01:00:00+09:00",
+                    "cpu1": 16.97222222222222,
+                    "cpu2": 10.061111111111112,
+                    "cpu3": 14.516666666666666,
+                    "cpu4": 29.272222222222222,
+                    "cpu5": 10.733333333333333,
+                    "cpu6": 19.916666666666668,
+                    "cpu7": 25.425,
+                    "cpu8": 15.411111111111111,
+                    "cpu9": 14.313888888888888
+                }
+            ]
     """
     server = server_crud.get_server_info(db, server_id)
     if not server:
