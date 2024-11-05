@@ -1,6 +1,6 @@
-from typing import List, Optional
+from typing import List
 
-from sqlalchemy import ARRAY, BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, PrimaryKeyConstraint, String, Table, text
+from sqlalchemy import ARRAY, BigInteger, Column, DateTime, ForeignKeyConstraint, Index, Integer, JSON, PrimaryKeyConstraint, Sequence, SmallInteger, String, Table, text
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
@@ -33,9 +33,12 @@ class Policy(Base):
     id = mapped_column(BigInteger)
     name = mapped_column(String(255), nullable=False)
     api_api_version = mapped_column(String(255), nullable=False)
-    create_at = mapped_column(DateTime(True))
-    update_at = mapped_column(DateTime(True))
+    created_at = mapped_column(DateTime(True))
+    updated_at = mapped_column(DateTime(True))
 
+    LsmFilePolicy: Mapped[List['LsmFilePolicy']] = relationship('LsmFilePolicy', uselist=True, back_populates='policy')
+    LsmNetPolicy: Mapped[List['LsmNetPolicy']] = relationship('LsmNetPolicy', uselist=True, back_populates='policy')
+    LsmProcPolicy: Mapped[List['LsmProcPolicy']] = relationship('LsmProcPolicy', uselist=True, back_populates='policy')
     RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='policy')
     TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='poicy')
 
@@ -50,7 +53,7 @@ class Server(Base):
     id = mapped_column(BigInteger)
     ip = mapped_column(String(255), nullable=False)
     name = mapped_column(String(255), nullable=False)
-    create_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
     Container: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='Server_')
 
@@ -66,7 +69,6 @@ class Tag(Base):
 
     container: Mapped['Container'] = relationship('Container', secondary='Container_tag', back_populates='tag')
 
-
 class Container(Base):
     __tablename__ = 'Container'
     __table_args__ = (
@@ -78,12 +80,16 @@ class Container(Base):
     host_server = mapped_column(BigInteger, nullable=False)
     runtime = mapped_column(String(100), nullable=False)
     name = mapped_column(String(255), nullable=False)
-    create_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     id = mapped_column(BigInteger)
+    removed_at = mapped_column(DateTime(True))
 
     Server_: Mapped['Server'] = relationship('Server', back_populates='Container')
     tag: Mapped['Tag'] = relationship('Tag', secondary='Container_tag', back_populates='container')
     InternalContainerId: Mapped[List['InternalContainerId']] = relationship('InternalContainerId', uselist=True, back_populates='container')
+    LsmFilePolicy: Mapped[List['LsmFilePolicy']] = relationship('LsmFilePolicy', uselist=True, back_populates='container')
+    LsmNetPolicy: Mapped[List['LsmNetPolicy']] = relationship('LsmNetPolicy', uselist=True, back_populates='container')
+    LsmProcPolicy: Mapped[List['LsmProcPolicy']] = relationship('LsmProcPolicy', uselist=True, back_populates='container')
     RawTracePointPolicy: Mapped[List['RawTracePointPolicy']] = relationship('RawTracePointPolicy', uselist=True, back_populates='container')
     TracepointPolicy: Mapped[List['TracepointPolicy']] = relationship('TracepointPolicy', uselist=True, back_populates='container')
 
@@ -118,6 +124,67 @@ class InternalContainerId(Base):
     container: Mapped['Container'] = relationship('Container', back_populates='InternalContainerId')
 
 
+class LsmFilePolicy(Base):
+    __tablename__ = 'LsmFilePolicy'
+    __table_args__ = (
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
+        ForeignKeyConstraint(['policy_id'], ['Policy.id'], name='FK__Policy'),
+        PrimaryKeyConstraint('id', name='lsmFilePolicy_pkey'),
+        Index('container_id_path', 'container_id', 'path', unique=True)
+    )
+
+    id = mapped_column(BigInteger, Sequence('lsmFilePolicy_id_seq'))
+    policy_id = mapped_column(BigInteger, nullable=False)
+    container_id = mapped_column(BigInteger, nullable=False)
+    path = mapped_column(String(4096), nullable=False)
+    flags = mapped_column(JSON, nullable=False)
+    uid = mapped_column(JSON, nullable=False)
+
+    container: Mapped['Container'] = relationship('Container', back_populates='LsmFilePolicy')
+    policy: Mapped['Policy'] = relationship('Policy', back_populates='LsmFilePolicy')
+
+
+class LsmNetPolicy(Base):
+    __tablename__ = 'LsmNetPolicy'
+    __table_args__ = (
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
+        ForeignKeyConstraint(['policy_id'], ['Policy.id'], name='FK__Policy'),
+        PrimaryKeyConstraint('id', name='LsmNetPolicy_pkey')
+    )
+
+    id = mapped_column(BigInteger)
+    policy_id = mapped_column(BigInteger, nullable=False)
+    container_id = mapped_column(BigInteger, nullable=False)
+    ip = mapped_column(String(256), nullable=False)
+    port = mapped_column(Integer, nullable=False)
+    protocol = mapped_column(SmallInteger, nullable=False)
+    flags = mapped_column(JSON, nullable=False)
+    uid = mapped_column(JSON, nullable=False)
+
+    container: Mapped['Container'] = relationship('Container', back_populates='LsmNetPolicy')
+    policy: Mapped['Policy'] = relationship('Policy', back_populates='LsmNetPolicy')
+
+
+class LsmProcPolicy(Base):
+    __tablename__ = 'LsmProcPolicy'
+    __table_args__ = (
+        ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
+        ForeignKeyConstraint(['policy_id'], ['Policy.id'], name='FK__Policy'),
+        PrimaryKeyConstraint('id', name='LsmProcPolicy_pkey'),
+        Index('container_id_comm', 'container_id', 'comm', unique=True)
+    )
+
+    id = mapped_column(BigInteger)
+    policy_id = mapped_column(BigInteger, nullable=False)
+    container_id = mapped_column(BigInteger, nullable=False)
+    comm = mapped_column(String(16), nullable=False)
+    flags = mapped_column(JSON, nullable=False)
+    uid = mapped_column(JSON, nullable=False)
+
+    container: Mapped['Container'] = relationship('Container', back_populates='LsmProcPolicy')
+    policy: Mapped['Policy'] = relationship('Policy', back_populates='LsmProcPolicy')
+
+
 class RawTracePointPolicy(Base):
     __tablename__ = 'RawTracePointPolicy'
     __table_args__ = (
@@ -128,12 +195,12 @@ class RawTracePointPolicy(Base):
     )
 
     id = mapped_column(BigInteger)
-    policy_id = mapped_column(BigInteger)
-    container_id = mapped_column(BigInteger)
-    state = mapped_column(String(4))
+    policy_id = mapped_column(BigInteger, nullable=False)
+    container_id = mapped_column(BigInteger, nullable=False)
+    state = mapped_column(String(4), nullable=False)
 
-    container: Mapped[Optional['Container']] = relationship('Container', back_populates='RawTracePointPolicy')
-    policy: Mapped[Optional['Policy']] = relationship('Policy', back_populates='RawTracePointPolicy')
+    container: Mapped['Container'] = relationship('Container', back_populates='RawTracePointPolicy')
+    policy: Mapped['Policy'] = relationship('Policy', back_populates='RawTracePointPolicy')
 
 
 class TracepointPolicy(Base):
