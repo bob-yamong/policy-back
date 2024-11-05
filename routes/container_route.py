@@ -26,6 +26,10 @@ def add_container(data: container_schema.ContainerAddReq, db=Depends(get_db)) ->
 
         Returns:
             container_schema.ContainerAddRes: 추가된 컨테이너 정보
+            
+        Raises:
+            HTTPException: 409 - 컨테이너 추가 실패
+            HTTPException: 422 - 잘못된 요청
     """
     
     return container_crud.add_container(db, data)
@@ -41,6 +45,11 @@ def container_info_to_server(server_id: int, db=Depends(get_db)) -> container_sc
 
         Returns:
             container_schema.ContainerInfo: 서버에 속한 컨테이너 정보
+        
+        Raises:
+            HTTPException: 404 - 서버를 찾을 수 없음
+            HTTPException: 422 - 잘못된 요청
+            HTTPException: 500 - 서버 내부 오류
     """
     
     return container_crud.get_server_container_info(db, server_id)
@@ -64,6 +73,7 @@ def update_container_tag(
             
         Raises:
             HTTPException: 404 - 컨테이너를 찾을 수 없음
+            HTTPException: 422 - 잘못된 요청
             HTTPException: 500 - 서버 내부 오류
         """
     container_crud.update_container_tag(db, data)
@@ -72,10 +82,21 @@ def update_container_tag(
 
 @router.patch("/tag", status_code=status.HTTP_206_PARTIAL_CONTENT)
 def add_container_tag(data: container_schema.ContainerTagUpdate, db=Depends(get_db)) -> None:
-    """컨테이너에 태그 정보를 추가합니다
+    """
+    컨테이너에 태그 정보를 추가합니다
 
     Args:
-        data (container_schema.ContainerTagUpdate): _description_
+        data (container_schema.ContainerTagUpdate): 컨테이너 ID 목록과 추가할 태그 목록
+        db (_type_, optional): Defaults to Depends(get_db).
+
+    Returns:
+        None
+    
+    Raises:
+        HTTPException: 404 - 컨테이너를 찾을 수 없음
+        HTTPException: 422 - 잘못된 요청
+        HTTPException: 500 - 서버 내부 오류
+        
     """
     return container_crud.add_container_tag(db, data)
 

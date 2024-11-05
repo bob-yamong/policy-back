@@ -22,8 +22,8 @@ def create_server(db: Session, server: server_schema.Server) -> server_schema.Se
         id=insert_data.id,
         ip=insert_data.ip,
         name=insert_data.name,
-        create_at=insert_data.create_at,
-        last_heartbeat=insert_data.create_at
+        created_at=insert_data.created_at,
+        last_heartbeat=insert_data.created_at
     )
 
 def get_server_info(db: Session, server_id: int) -> server_schema.ServerInfo:
@@ -34,7 +34,7 @@ def get_server_info(db: Session, server_id: int) -> server_schema.ServerInfo:
         id=server_info.id,
         ip=server_info.ip,
         name=server_info.name,
-        create_at=server_info.create_at,
+        created_at=server_info.created_at,
         last_heartbeat=last_heartbeat.timestamp if last_heartbeat else None
     )
     
@@ -49,6 +49,12 @@ def get_server_list(db: Session) -> server_schema.ServerList:
     )
     
     return server_list_info
+
+def update_server_name(db: Session, server_id: int, data: server_schema.ServerNameUpdateReq) -> server_schema.ServerInfo:
+    db.query(models.Server).filter(models.Server.id == server_id).update({"name": data.name})
+    db.commit()
+    
+    return get_server_info(db, server_id)
 
 def delete_server(db: Session, server_id: int) -> None:
     db.query(models.Server).filter(models.Server.id == server_id).delete()

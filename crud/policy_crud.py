@@ -8,7 +8,7 @@ from database import models
 
 from crud.server_crud import get_server_info_from_ip, create_server
 
-def get_server_policy(db: Session, server_id: int):
+def get_server_policy(db: Session, server_id: int) -> policy_schema.ServerPolicy:
     server = db.query(models.Server).filter(models.Server.id == server_id).first()
     if not server:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Server not found")
@@ -127,6 +127,12 @@ def get_server_policy(db: Session, server_id: int):
         },
         {
         "container_name": "test-container-2",
+        "raw_tp": "on",
+        "tracepoint_policy": {
+            "tracepoints": [
+                "__NR_umount2"
+            ]
+        },
         "lsm_policies": {
             "file": [
             {
@@ -179,10 +185,10 @@ def get_server_policy(db: Session, server_id: int):
     ]
     }
 
-def get_container_policy(db:Session, server_id: int, container_id: int):
+def get_container_policy(db:Session, server_id: int, container_id: int) -> policy_schema.ContainerPolicy:
     container = db.query(models.Container).filter(
         models.Container.id == container_id,
-        models.Container.server_id == server_id
+        models.Container.host_server == server_id
     ).first()
     
     if not container:
@@ -303,4 +309,17 @@ def get_container_policy(db:Session, server_id: int, container_id: int):
                 }
             }
         ]
+    }
+    
+def check_conflict(db: Session, server_id: int, container_id: int | None = None):
+    server = db.query(models.Server).filter(models.Server.id == server_id).first()
+    if not server:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Server not found")
+    
+    container = db.query(models.Container).filter(models.Container.id == container_id).first()
+    if not container:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Container not found")
+    
+    return {
+        "conflict": False
     }

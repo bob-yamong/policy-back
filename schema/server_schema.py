@@ -1,14 +1,22 @@
 from pydantic import BaseModel
 from datetime import datetime
+
+# ========== Server Data ==========
+
 class Server(BaseModel):
     ip: str
     name: str
     
 class ServerInfo(Server):
     id: int
-    create_at: datetime
+    created_at: datetime
     last_heartbeat: datetime | None = None
-    
+
+# ========== Server Schema ==========
+
 class ServerList(BaseModel):
     cnt: int    
     server: list[ServerInfo]
+    
+class ServerNameUpdateReq(BaseModel):
+    name: str

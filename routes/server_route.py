@@ -26,6 +26,10 @@ def add_server(server: server_schema.Server, db:Session=Depends(get_db)) -> serv
 
         Returns:
             server_schema.ServerInfo: 추가된 서버의 정보를 반환합니다.
+            
+        Raises:
+            HTTPException: 422 - 잘못된 요청
+            HTTPException: 500 - 서버 내부 오류
     """
     return server_crud.create_server(db, server)
     
@@ -41,11 +45,33 @@ def get_server_list(db:Session=Depends(get_db)) -> server_schema.ServerList:
 
         Returns:
             server_schema.ServerList: 관리되는 서버 목록을 반환합니다.
+            
+        Raises:
+            HTTPException: 422 - 잘못된 요청
+            HTTPException: 500 - 서버 내부 오류
     """
     return server_crud.get_server_list(db)
 
 
 # Update
+@router.patch("/{server_id}", response_model=server_schema.ServerInfo)
+def update_server_name(server_id: int, data: server_schema.ServerNameUpdateReq, db=Depends(get_db)) -> server_schema.ServerInfo:
+    """
+    서버 이름을 수정합니다.
+
+        Args:
+            server_id (int): 수정할 서버 id
+            db (Session, optional): 서버에서 추가되는 db DI 정보입니다. Defaults to Depends(get_db).
+            server (server_schema.ServerNameUpdate): 수정할 서버의 이름 정보를 포함합니다.
+
+        Returns:
+            server_schema.ServerInfo: 수정된 서버의 정보를 반환합니다.
+            
+        Raises:
+            HTTPException: 422 - 잘못된 요청
+            HTTPException: 500 - 서버 내부 오류
+    """
+    return server_crud.update_server_name(db, server_id, data)
 
 # # Delete
 # @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)

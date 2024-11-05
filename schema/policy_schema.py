@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+# ==================== Policy Data ====================
+
 class TracepointPolicy(BaseModel):
     tracepoints: list[str] = []
 
@@ -33,9 +35,14 @@ class Policy(BaseModel):
 class ServerPolicy(BaseModel):
     api_version: str
     name: str
-    containers: Policy
+    containers: list[Policy]
 
 class ContainerPolicy(BaseModel):
     api_version: str
     name: str
     policy: Policy
+
+class ContainerPolicyRes(BaseModel):
+    polices: list[ContainerPolicy]
+    
+# ==================== Policy Schema ====================
