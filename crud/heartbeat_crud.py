@@ -4,6 +4,8 @@ from schema import server_schema
 from schema import heartbeat_schema
 from database import models
 
+from datetime import datetime
+
 from crud.server_crud import get_server_info_from_ip, create_server
 
 def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq):
@@ -37,8 +39,15 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
     ))
     db.commit()
     
+    # 기존 컨테이너 목록 조회
+    removed_container_ids = db.query(models.Container).filter(models.Container.host_server == server.id).all()
+    
+    removed_container_ids = [container.id for container in removed_container_ids]
+    
     for container in heartbeat.containers:
         container_info = db.query(models.Container).filter(models.Container.name == container.container_name).first()
+        
+        removed_container_ids.remove(container_info.id)
         
         if not container_info:
             db.add(models.Container(
@@ -51,19 +60,19 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
         container_info = db.query(models.Container).filter(models.Container.name == container.container_name).first()
         internal_container_id = db.query(models.InternalContainerId).filter(
             models.InternalContainerId.container_id == container_info.id,
-        ).first()
+        ).order_by(models.InternalContainerId.reg_time.desc()).first()
         
         if internal_container_id and (
             internal_container_id.pid_id != container.namespace.pid 
             or internal_container_id.mnt_id != container.namespace.mnt 
             or internal_container_id.cgroup_id != container.cgroup_id):
-            db.query(models.InternalContainerId).filter(
-                models.InternalContainerId.container_id == container_info.id
-            ).update({
-                "pid_id": container.namespace.pid,
-                "mnt_id": container.namespace.mnt,
-                "cgroup_id": container.cgroup_id
-            })
+            db.add(models.InternalContainerId(
+                container_id = container_info.id,
+                pid_id = container.namespace.pid,
+                mnt_id = container.namespace.mnt,
+                cgroup_id = container.cgroup_id
+            ))
+            db.commit()
         
         if not internal_container_id:
             db.add(models.InternalContainerId(
@@ -91,6 +100,11 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
             net_send_packets = container.stats.network.tx_packets,
             proc_cnt = container.stats.proc_cnt
         ))
+        db.commit()
+    
+    # 만약 사라진 컨테이너가 존재하면 removed_at 업데이트
+    for container_id in removed_container_ids:
+        db.query(models.Container).filter(models.Container.id == container_id).update({"removed_at": datetime.now()})
         db.commit()
     
     insert_data = models.Heartbeat(
