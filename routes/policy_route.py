@@ -19,7 +19,7 @@ router = APIRouter(
 #     return {"container": container_id}
 
 # Read
-@router.get("/{server_id}", response_model=policy_schema.ServerPolicy)
+@router.get("/server/{server_id}", response_model=policy_schema.ServerPolicy)
 def get_server_policy(server_id: int, db: Session = Depends(get_db)) -> policy_schema.ServerPolicy:
     """
     Get the policy applied to the server.
@@ -38,7 +38,7 @@ def get_server_policy(server_id: int, db: Session = Depends(get_db)) -> policy_s
     """
     return policy_crud.get_server_policy(db, server_id)
 
-@router.get("/{server_id}/{container_id}", response_model=policy_schema.ContainerPolicyRes)
+@router.get("/container/{container_id}", response_model=policy_schema.ContainerPolicyRes)
 def get_container_policy(server_id: int, container_id: int, db: Session = Depends(get_db)) -> policy_schema.ContainerPolicy:
     """
     Get the policy applied to the container.
