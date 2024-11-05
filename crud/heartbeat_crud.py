@@ -119,45 +119,41 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
     
     return
 
-def get_server_stats(db: Session, server_id: int, call_back: callable = mean):
-    """
-    최근 24시간의 서버 상태 정보를 반환합니다.
-
-    Args:
-        server_id (int): 조회할 서버 id
-    """
+def get_server_stats(db: Session, server_id: int, time_unit:str, call_back: callable = mean):
+     
+                    
     # 1시간 마다 cpu 코어들의 평균을 내서 시간과 값의 리스트 형식으로 반환
     one_day_ago = datetime.now() - timedelta(days=1)
     
     # 1시간 마다 각 CPU 코어별 평균을 계산
     query = db.query(
-        func.date_trunc('hour', models.SystemInfo.timestamp).label('hour'),
+        func.date_trunc(time_unit, models.SystemInfo.timestamp).label('unit'),
         models.SystemInfo.cpu_core_usage
     ).filter(
         models.SystemInfo.server_id == server_id,
         models.SystemInfo.timestamp >= one_day_ago
-    ).order_by('hour').all()
+    ).order_by('unit').all()
 
     # 결과를 처리하여 원하는 형태로 변환
     result = {}
     for record in query:
-        hour = record.hour
+        unit = record.unit
         cpu_usages = record.cpu_core_usage  # JSON 배열
 
-        if hour not in result:
-            result[hour] = {f"cpu{i+1}": [] for i in range(len(cpu_usages))}
+        if unit not in result:
+            result[unit] = {f"cpu{i+1}": [] for i in range(len(cpu_usages))}
         
         # 각 CPU 코어의 사용률을 해당 시간의 리스트에 추가
         for i, usage in enumerate(cpu_usages):
-            result[hour][f"cpu{i+1}"].append(float(usage))
+            result[unit][f"cpu{i+1}"].append(float(usage))
 
     # 각 시간대별로 CPU 코어의 평균 계산
     final_result = []
-    for hour, cpu_data in result.items():
-        hour_result = {"time": hour.isoformat()}
+    for unit, cpu_data in result.items():
+        unit_result = {"time": unit.isoformat()}
         for cpu, values in cpu_data.items():
-            hour_result[cpu] = call_back(values)
-        final_result.append(hour_result)
+            unit_result[cpu] = call_back(values)
+        final_result.append(unit_result)
 
     # 시간순으로 정렬
     final_result.sort(key=lambda x: x['time'])

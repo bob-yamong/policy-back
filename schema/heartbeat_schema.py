@@ -1,5 +1,18 @@
 from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
+
+class TimeUnit(Enum):
+    MINUTE = 'minute'
+    HOUR = 'hour'
+    DAY = 'day'
+    WEEK = 'week'
+    MONTH = 'month'
+    
+class funcList(Enum):
+    MEAN = 'mean'
+    MEDIAN = 'median'
+    MAX = "max"
 
 class ContainerCpu(BaseModel):
     kernel_usage: float
