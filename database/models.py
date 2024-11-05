@@ -114,7 +114,7 @@ class SystemInfo(Base):
     disk_write_mb = mapped_column(Float, nullable=False)
     disk_total = mapped_column(Float, nullable=False)
     disk_used = mapped_column(Float, nullable=False)
-    dis_percent = mapped_column(Float, nullable=False)
+    disk_percent = mapped_column(Float, nullable=False)
     net_recv_data_mb = mapped_column(Float, nullable=False)
     net_send_data_mb = mapped_column(Float, nullable=False)
     net_recv_packets = mapped_column(Integer, nullable=False)

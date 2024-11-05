@@ -29,7 +29,7 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
         disk_write_mb = heartbeat.host.disk.write_MB,
         disk_total = heartbeat.host.disk.usage.total_GB,
         disk_used = heartbeat.host.disk.usage.used_GB,
-        dis_percent = heartbeat.host.disk.usage.percent,
+        disk_percent = heartbeat.host.disk.usage.percent,
         net_recv_data_mb = heartbeat.host.network.recv_data_MB,
         net_send_data_mb = heartbeat.host.network.sent_data_MB,
         net_recv_packets = heartbeat.host.network.recv_packets,
