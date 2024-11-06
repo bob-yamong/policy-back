@@ -50,7 +50,7 @@ class ContainerPolicyInfo(BaseModel):
     
 # ==================== Policy Schema ====================
 
-class ContainerPolicyRes(BaseModel):
+class PolicyRes(BaseModel):
     policies: list[ContainerPolicy]
     
 class ContainerPolicyCreateRes(BaseModel):
