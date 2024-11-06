@@ -15,6 +15,7 @@ class ContainerInfo(BaseContainer):
     cgroup_id: int | None = None
     tag: list[str] = []
     created_at: datetime
+    removed_at: datetime | None = None
     req_time: datetime | None = None
     
 # ==================== Container Schema ====================
