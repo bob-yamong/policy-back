@@ -143,177 +143,19 @@ def get_server_policy(db: Session, server_id: int) -> policy_schema.ServerPolicy
     if not server:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Server not found")
     
-    return {
-    "api_version": "policy.yamong.com/v1",
-    "name": "multi-container-example-policy",
-    "containers": [
-        {
-        "container_name": "sharp_yalow",
-        "raw_tp": "on",
-        "tracepoint_policy": {
-            "tracepoints": [
-                "__NR_umount2"
-            ]
-        },
-        "lsm_policies": {
-            "file": [
-            {
-                "path": "/etc/passwd",
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_FILE_READ"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            },
-            {
-                "path": "/var/log",
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_FILE_WRITE",
-                "POLICY_FILE_APPEND",
-                "POLICY_RECURSIVE"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            },
-            {
-                "path": "/sys",
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_FILE_WRITE",
-                "POLICY_FILE_APPEND",
-                "POLICY_RECURSIVE"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            }
-            ],
-            "network": [
-            {
-                "ip": "192.168.1.100",
-                "port": 80,
-                "protocol": 6,
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_NET_CONNECT"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            },
-            {
-                "ip": "10.0.0.0/8",
-                "port": 443,
-                "protocol": 6,
-                "flags": [
-                "POLICY_NET_CONNECT",
-                "POLICY_DENY"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            }
-            ],
-            "process": [
-            {
-                "comm": "nginx",
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_PROC_EXEC"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            },
-            {
-                "comm": "bash",
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_PROC_EXEC"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            }
-            ]
-        }
-        },
-        {
-        "container_name": "test-container-2",
-        "raw_tp": "on",
-        "tracepoint_policy": {
-            "tracepoints": [
-                "__NR_umount2"
-            ]
-        },
-        "lsm_policies": {
-            "file": [
-            {
-                "path": "/app/data",
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_FILE_READ",
-                "POLICY_FILE_WRITE"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            }
-            ],
-            "network": [
-            {
-                "ip": "0.0.0.0/0",
-                "port": 8080,
-                "protocol": 6,
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_NET_BIND",
-                "POLICY_NET_ACCEPT"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            }
-            ],
-            "process": [
-            {
-                "comm": "python",
-                "flags": [
-                "POLICY_ALLOW",
-                "POLICY_AUDIT",
-                "POLICY_PROC_EXEC"
-                ],
-                "uid": [
-                1000,
-                1001
-                ]
-            }
-            ]
-        }
-        }
-    ]
+    container_list_in_server = db.query(models.Container).filter(models.Container.host_server == server_id).all()
+    
+    ret = {
+        "policies": []
     }
+    
+    for container in container_list_in_server:
+        policy = get_container_policy(db, container.id)
+        if len(policy["policies"]) == 0:
+            continue
+        ret["policies"].extend(policy["policies"])
+    
+    return ret
 
 def get_container_policy(db: Session, container_id: int) -> policy_schema.ContainerPolicy:
     # 컨테이너와 연관된 정책들을 함께 조회

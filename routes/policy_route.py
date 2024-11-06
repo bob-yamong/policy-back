@@ -27,7 +27,7 @@ def create_policy(policy: policy_schema.ServerPolicy, db: Session = Depends(get_
             db (Session, optional): Defaults to Depends(get_db).
 
         Returns:
-            dict: 추가에 실패한 사용자 정의 정책 목록
+            policy_schema.ContainerPolicyCreateRes: 추가에 실패한 사용자 정의 정책 목록
             
         Raises:
             HTTPException: 409 Conflict : 기존 정책이 존재하는 경우
@@ -45,7 +45,7 @@ async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):
             file (UploadFile): 정책 yaml 파일
 
         Returns:
-            dict: 업로드에 실패한 정책 목록
+            policy_schema.ContainerPolicyCreateRes: 업로드에 실패한 정책 목록
             
         Raises:
             HTTPException: 409 Conflict : 기존 정책이 존재하는 경우
@@ -58,10 +58,9 @@ async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):
     return {"containers": policy_crud.create_custom_policy(db, policy)}
 
 # Read
-@router.get("/server/{server_id}", response_model=policy_schema.ServerPolicy)
+@router.get("/server/{server_id}", response_model=policy_schema.PolicyRes)
 def get_server_policy(server_id: int, db: Session = Depends(get_db)) -> policy_schema.ServerPolicy:
     """
-    (작업중)
     Get the policy applied to the server.
 
         Args:
@@ -69,7 +68,7 @@ def get_server_policy(server_id: int, db: Session = Depends(get_db)) -> policy_s
             db (Session, optional): Defaults to Depends(get_db).
 
         Returns:
-            policy_schema.ServerPolicy: 조회된 정책
+            policy_schema.PolicyRes: 조회된 정책
             
         Raises:
             HTTPException: 404 Not Found : 서버가 존재하지 않는 경우
@@ -88,7 +87,7 @@ def get_container_policy(container_id: int, db: Session = Depends(get_db)) -> po
             db (Session, optional): Defaults to Depends(get_db).
 
         Returns:
-            policy_schema.ContainerPolicy: 조회된 정책
+            policy_schema.PolicyRes: 조회된 정책
             
         Raises:
             HTTPException: 404 Not Found : 서버 또는 컨테이너가 존재하지 않는 경우
