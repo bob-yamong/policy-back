@@ -42,7 +42,8 @@ class ContainerPolicy(BaseModel):
     name: str
     policy: Policy
 
+# ==================== Policy Schema ====================
+
 class ContainerPolicyRes(BaseModel):
     policies: list[ContainerPolicy]
     
-# ==================== Policy Schema ====================

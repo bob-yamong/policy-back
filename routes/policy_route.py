@@ -14,9 +14,9 @@ router = APIRouter(
 )
 
 # Create
-# @router.post("/{server_id}")
-# def create_policy(container_id: int):
-#     return {"container": container_id}
+@router.post("/custom", status_code=status.HTTP_201_CREATED)
+def create_policy(policy: policy_schema.ServerPolicy, db: Session = Depends(get_db)):
+    return policy_crud.create_custom_policy(db, policy)
 
 # Read
 @router.get("/server/{server_id}", response_model=policy_schema.ServerPolicy)

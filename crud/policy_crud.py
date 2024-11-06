@@ -3,10 +3,117 @@ from fastapi import Request
 from fastapi import HTTPException
 from starlette import status
 
-from schema import server_schema, policy_schema
+from schema import server_schema, policy_schema, container_schema
 from database import models
 
-from crud.server_crud import get_server_info_from_ip, create_server
+from crud import container_crud
+from crud.server_crud import get_server_info_from_uuid, create_server
+
+
+def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
+    # TODO: 다중 서버 환경을 지원될 때 yaml 구조와 정책 적용 방식이 변경되어야 함
+    # ! 현재는 일단 13번 서버에 등록되어있는 컨테이너에 적용 예정
+    
+    # 기존 정책 확인
+    policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
+    if policy_data:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Policy "{policy.name}" already exists')
+    else:
+        db.add(models.Policy(
+            name=policy.name,
+            api_version=policy.api_version
+        ))
+        db.commit()
+        
+        policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
+    
+    # 정책 생성
+    insert_failed_policy = {}
+    for container in policy.containers:
+        container_info = container_crud.is_exist_container(db, container.container_name)
+        
+        if not container_info:
+            container_info = container_crud.add_container(
+                db, container_schema.ContainerAddReq(
+                    # Todo 이후 서버 설정이 가능해 질 때 수정이 필요함.
+                    host_server="192.168.0.1", 
+                    runtime="docker", 
+                    name=container.container_name
+                ))
+        
+        try:
+            db.add(models.RawTracePointPolicy(
+                policy_id = policy_data.id,
+                container_id = container_info.id,
+                state = container.raw_tp
+            ))
+            db.commit()
+        except Exception as e:
+            print(e)
+            
+            db.query(models.RawTracePointPolicy) \
+                .filter(models.RawTracePointPolicy.container_id == container_info.id) \
+                .update({"state": container.raw_tp})
+        
+        for tracepoint in container.tracepoint_policy.tracepoints:
+            try:
+                db.add(models.TracepointPolicy(
+                    policy_id = policy_data.id,
+                    container_id = container_info.id,
+                    tracepoint = tracepoint
+                ))
+                db.commit()
+            except Exception as e:
+                print(e)
+                
+                insert_failed_policy.setdefault(container.container_name, {}).setdefault("tracepoint", []).append(tracepoint)
+        for file_policy in container.lsm_policies.file:
+            try:
+                db.add(models.LsmFilePolicy(
+                    policy_id = policy_data.id,
+                    container_id = container_info.id,
+                    path = file_policy.path,
+                    flags = file_policy.flags,
+                    uid = file_policy.uid
+                ))
+                db.commit()
+            except Exception as e:
+                print(e)
+                
+                insert_failed_policy.setdefault(container.container_name, {}).setdefault("lsm_file", []).append(file_policy)
+        for net_policy in container.lsm_policies.network:
+            try:
+                db.add(models.LsmNetPolicy(
+                    policy_id = policy_data.id,
+                    container_id = container_info.id,
+                    ip = net_policy.ip,
+                    port = net_policy.port,
+                    protocol = net_policy.protocol,
+                    flags = net_policy.flags,
+                    uid = net_policy.uid
+                ))
+                db.commit()
+            except Exception as e:
+                print(e)
+                
+                insert_failed_policy.setdefault(container.container_name, {}).setdefault("lsm_network", []).append(net_policy)
+                
+        for process_policy in container.lsm_policies.process:
+            try:
+                db.add(models.LsmProcPolicy(
+                    policy_id = policy_data.id,
+                    container_id = container_info.id,
+                    comm = process_policy.comm,
+                    flags = process_policy.flags,
+                    uid = process_policy.uid
+                ))
+                db.commit()
+            except Exception as e:
+                print(e)
+                
+                insert_failed_policy.setdefault(container.container_name, {}).setdefault("lsm_process", []).append(process_policy)
+                                                                                                                   
+    return insert_failed_policy
 
 def get_server_policy(db: Session, server_id: int) -> policy_schema.ServerPolicy:
     server = db.query(models.Server).filter(models.Server.id == server_id).first()

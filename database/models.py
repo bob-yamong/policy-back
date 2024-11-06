@@ -32,8 +32,8 @@ class Policy(Base):
 
     id = mapped_column(BigInteger)
     name = mapped_column(String(255), nullable=False)
-    api_api_version = mapped_column(String(255), nullable=False)
-    created_at = mapped_column(DateTime(True))
+    created_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    api_version = mapped_column(String(255), nullable=False)
     updated_at = mapped_column(DateTime(True))
 
     LsmFilePolicy: Mapped[List['LsmFilePolicy']] = relationship('LsmFilePolicy', uselist=True, back_populates='policy')
