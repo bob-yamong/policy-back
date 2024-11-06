@@ -16,16 +16,16 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
     
     # 기존 정책 확인
     policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
-    if policy_data:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Policy "{policy.name}" already exists')
-    else:
-        db.add(models.Policy(
-            name=policy.name,
-            api_version=policy.api_version
-        ))
-        db.commit()
+    # if policy_data:
+    #     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Policy "{policy.name}" already exists')
+    # else:
+    #     db.add(models.Policy(
+    #         name=policy.name,
+    #         api_version=policy.api_version
+    #     ))
+    #     db.commit()
         
-        policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
+    #     policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
     
     # 정책 생성
     insert_failed_policy = {}
@@ -42,6 +42,11 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
                 ))
         
         try:
+            if db.query(models.RawTracePointPolicy).filter(
+                models.RawTracePointPolicy.container_id == container_info.id
+            ).first():
+                raise Exception("Already exists")
+            
             db.add(models.RawTracePointPolicy(
                 policy_id = policy_data.id,
                 container_id = container_info.id,
@@ -49,14 +54,18 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
             ))
             db.commit()
         except Exception as e:
-            print(e)
-            
             db.query(models.RawTracePointPolicy) \
                 .filter(models.RawTracePointPolicy.container_id == container_info.id) \
                 .update({"state": container.raw_tp})
         
         for tracepoint in container.tracepoint_policy.tracepoints:
             try:
+                if db.query(models.TracepointPolicy).filter(
+                    models.TracepointPolicy.container_id == container_info.id,
+                    models.TracepointPolicy.tracepoint == tracepoint
+                ).first():
+                    raise Exception("Already exists")
+                
                 db.add(models.TracepointPolicy(
                     policy_id = policy_data.id,
                     container_id = container_info.id,
@@ -64,11 +73,16 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
                 ))
                 db.commit()
             except Exception as e:
-                print(e)
-                
                 insert_failed_policy.setdefault(container.container_name, {}).setdefault("tracepoint", []).append(tracepoint)
+        
         for file_policy in container.lsm_policies.file:
             try:
+                if db.query(models.LsmFilePolicy).filter(
+                    models.LsmFilePolicy.container_id == container_info.id,
+                    models.LsmFilePolicy.path == file_policy.path
+                ).first():
+                    raise Exception("Already exists")
+                
                 db.add(models.LsmFilePolicy(
                     policy_id = policy_data.id,
                     container_id = container_info.id,
@@ -78,11 +92,18 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
                 ))
                 db.commit()
             except Exception as e:
-                print(e)
-                
                 insert_failed_policy.setdefault(container.container_name, {}).setdefault("lsm_file", []).append(file_policy)
+        
         for net_policy in container.lsm_policies.network:
             try:
+                if db.query(models.LsmNetPolicy).filter(
+                    models.LsmNetPolicy.container_id == container_info.id,
+                    models.LsmNetPolicy.ip == net_policy.ip,
+                    models.LsmNetPolicy.port == net_policy.port,
+                    models.LsmNetPolicy.protocol == net_policy.protocol
+                ).first():
+                    raise Exception("Already exists")
+                
                 db.add(models.LsmNetPolicy(
                     policy_id = policy_data.id,
                     container_id = container_info.id,
@@ -94,12 +115,16 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
                 ))
                 db.commit()
             except Exception as e:
-                print(e)
-                
                 insert_failed_policy.setdefault(container.container_name, {}).setdefault("lsm_network", []).append(net_policy)
                 
         for process_policy in container.lsm_policies.process:
             try:
+                if db.query(models.LsmProcPolicy).filter(
+                    models.LsmProcPolicy.container_id == container_info.id,
+                    models.LsmProcPolicy.comm == process_policy.comm
+                ).first():
+                    raise Exception("Already exists")
+                
                 db.add(models.LsmProcPolicy(
                     policy_id = policy_data.id,
                     container_id = container_info.id,
@@ -109,8 +134,6 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
                 ))
                 db.commit()
             except Exception as e:
-                print(e)
-                
                 insert_failed_policy.setdefault(container.container_name, {}).setdefault("lsm_process", []).append(process_policy)
                                                                                                                    
     return insert_failed_policy

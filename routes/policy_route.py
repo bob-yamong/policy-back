@@ -17,11 +17,26 @@ router = APIRouter(
 )
 
 # Create
-@router.post("/custom", status_code=status.HTTP_201_CREATED)
+@router.post("/custom", status_code=status.HTTP_201_CREATED, response_model=policy_schema.ContainerPolicyCreateRes)
 def create_policy(policy: policy_schema.ServerPolicy, db: Session = Depends(get_db)):
-    return policy_crud.create_custom_policy(db, policy)
+    """
+    Create a custom policy.
 
-@router.post("/upload/")
+        Args:
+            policy (policy_schema.ServerPolicy): 추가할 사용자 정의 정책
+            db (Session, optional): Defaults to Depends(get_db).
+
+        Returns:
+            dict: 추가에 실패한 사용자 정의 정책 목록
+            
+        Raises:
+            HTTPException: 409 Conflict : 기존 정책이 존재하는 경우
+            HTTPException: 422 - 잘못된 요청
+            HTTPException: 500 - 서버 내부 오류
+    """
+    return {"containers": policy_crud.create_custom_policy(db, policy)}
+
+@router.post("/upload/", response_model=policy_schema.ContainerPolicyCreateRes)
 async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):
     """
     Create a custom policy using a yaml
@@ -33,13 +48,14 @@ async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):
             dict: 업로드에 실패한 정책 목록
             
         Raises:
+            HTTPException: 409 Conflict : 기존 정책이 존재하는 경우
             HTTPException: 422 - 잘못된 요청
             HTTPException: 500 - 서버 내부 오류
     """
     content = await file.read()
-    data = parse_yaml_raw_as(policy_schema.ServerPolicy, content) 
+    policy = parse_yaml_raw_as(policy_schema.ServerPolicy, content) 
     
-    return policy_crud.create_custom_policy(db, data)
+    return {"containers": policy_crud.create_custom_policy(db, policy)}
 
 # Read
 @router.get("/server/{server_id}", response_model=policy_schema.ServerPolicy)
