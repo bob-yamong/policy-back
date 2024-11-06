@@ -30,7 +30,7 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
     # 정책 생성
     insert_failed_policy = {}
     for container in policy.containers:
-        container_info = container_crud.is_exist_container(db, container.container_name)
+        container_info = container_crud.get_container_by_name(db, container.container_name)
         
         if not container_info:
             container_info = container_crud.add_container(

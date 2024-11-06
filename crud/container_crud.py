@@ -25,11 +25,11 @@ def get_tag_id_set(db: Session, tag_list: list[str]) -> set:
     return tag_id_set
     
 
-def add_container(db:Session, container: container_schema.ContainerAddReq) -> container_schema.ContainerAddRes:
-    host_server = db.query(models.Server).filter(models.Server.ip == container.host_server).first()
+def add_container(db:Session, container: container_schema.ContainerAddReq) -> models.Container:
+    host_server = db.query(models.Server).filter(models.Server.uuid == container.host_server).first()
     
     if host_server is None:
-        host_server = server_crud.create_server(db, server_schema.Server(ip=container.host_server, name=container.host_server))
+        host_server = server_crud.create_server(db, server_schema.Server(uuid=container.host_server, name=container.host_server))
     
     host_server = host_server.id
     
@@ -45,8 +45,14 @@ def add_container(db:Session, container: container_schema.ContainerAddReq) -> co
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Container add failed")
     
-    return db.query(models.Container).filter(models.Container.host_server == host_server).first()
+    return db.query(models.Container).filter(models.Container.name == container.name).first()
 
+def get_container_by_name(db: Session, container_name: str) -> bool:
+    container = db.query(models.Container).filter(models.Container.name == container_name).first()
+    
+    if container is None:
+        return None
+    return container
 
 def get_server_container_info(db: Session, server_id: int) -> container_schema.ServerContainerInfoRes:
     server_check = db.query(models.Server).filter(models.Server.id == server_id).first()
@@ -93,6 +99,7 @@ def get_server_container_info(db: Session, server_id: int) -> container_schema.S
             cgroup_id = container.InternalContainerId.cgroup_id if container.InternalContainerId else None,
             tag = tag_list,
             created_at = container.Container.created_at,
+            removed_at = container.Container.removed_at,
             req_time = container.InternalContainerId.reg_time if container.InternalContainerId else None
         )
         
