@@ -1,8 +1,11 @@
+import os
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from starlette import status
 from sqlalchemy.orm import Session
+from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
+from ruamel.yaml import YAML
 
 from database.database import get_db
 from schema import policy_schema
@@ -17,6 +20,26 @@ router = APIRouter(
 @router.post("/custom", status_code=status.HTTP_201_CREATED)
 def create_policy(policy: policy_schema.ServerPolicy, db: Session = Depends(get_db)):
     return policy_crud.create_custom_policy(db, policy)
+
+@router.post("/upload/")
+async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):d
+    """
+    Create a custom policy using a yaml
+
+        Args:
+            file (UploadFile): 정책 yaml 파일
+
+        Returns:
+            dict: 업로드에 실패한 정책 목록
+            
+        Raises:
+            HTTPException: 422 - 잘못된 요청
+            HTTPException: 500 - 서버 내부 오류
+    """
+    content = await file.read()
+    data = parse_yaml_raw_as(policy_schema.ServerPolicy, content) 
+    
+    return policy_crud.create_custom_policy(db, data)
 
 # Read
 @router.get("/server/{server_id}", response_model=policy_schema.ServerPolicy)
