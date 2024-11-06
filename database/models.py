@@ -47,16 +47,15 @@ class Server(Base):
     __tablename__ = 'Server'
     __table_args__ = (
         PrimaryKeyConstraint('id', name='Server_pkey'),
-        Index('ip', 'ip', unique=True)
+        Index('uuid', 'uuid', unique=True)
     )
 
     id = mapped_column(BigInteger)
-    ip = mapped_column(String(255), nullable=False)
+    uuid = mapped_column(String(255), nullable=False)
     name = mapped_column(String(255), nullable=False)
     created_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    containers: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='server')
-    SystemInfo: Mapped[List['SystemInfo']] = relationship('SystemInfo', uselist=True, back_populates='server')
+    Container: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='Server_')
 
 class Tag(Base):
     __tablename__ = 'Tag'

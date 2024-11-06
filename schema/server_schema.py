@@ -4,7 +4,7 @@ from datetime import datetime
 # ========== Server Data ==========
 
 class Server(BaseModel):
-    ip: str
+    uuid: str
     name: str
     
 class ServerInfo(Server):
