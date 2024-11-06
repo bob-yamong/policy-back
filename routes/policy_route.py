@@ -22,7 +22,7 @@ def create_policy(policy: policy_schema.ServerPolicy, db: Session = Depends(get_
     return policy_crud.create_custom_policy(db, policy)
 
 @router.post("/upload/")
-async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):d
+async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):
     """
     Create a custom policy using a yaml
 
