@@ -96,5 +96,5 @@ class HostInfo(BaseModel):
 class InfoReq(BaseModel):
     containers: list[ContainerInfo]
     host: HostInfo
-    host_ip: str
+    host_uuid: str
     timestamp: datetime

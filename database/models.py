@@ -1,7 +1,7 @@
 from typing import List
 
-from sqlalchemy import ARRAY, BigInteger, Column, DateTime, Float, ForeignKeyConstraint, Index, Integer, JSON, PrimaryKeyConstraint, Sequence, SmallInteger, String, Table, text
-from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKeyConstraint, Index, Integer, JSON, PrimaryKeyConstraint, Sequence, SmallInteger, String, text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
 from database.database import project_base
@@ -17,7 +17,7 @@ class Heartbeat(Base):
     )
 
     id = mapped_column(BigInteger)
-    ip = mapped_column(String(255), nullable=False)
+    uuid = mapped_column(String(255), nullable=False)
     timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     survival_container_cnt = mapped_column(Integer, nullable=False, server_default=text('0'))
     req_ip = mapped_column(String(255), nullable=False)
@@ -55,7 +55,8 @@ class Server(Base):
     name = mapped_column(String(255), nullable=False)
     created_at = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    Container: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='Server_')
+    containers: Mapped[List['Container']] = relationship('Container', uselist=True, back_populates='server')
+    SystemInfo: Mapped[List['SystemInfo']] = relationship('SystemInfo', uselist=True, back_populates='server')
 
 class Tag(Base):
     __tablename__ = 'Tag'

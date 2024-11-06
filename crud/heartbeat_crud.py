@@ -7,14 +7,14 @@ from datetime import datetime, timedelta
 from schema import server_schema
 from schema import heartbeat_schema
 from database import models
-from crud.server_crud import get_server_info_from_ip, create_server
+from crud.server_crud import get_server_info_from_uuid, create_server
 
 def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq):
-    server = get_server_info_from_ip(db, heartbeat.host_ip) 
+    server = get_server_info_from_uuid(db, heartbeat.host_uuid) 
     if not server:
        server = create_server(db, server_schema.Server(
-           ip = heartbeat.host_ip,
-           name = str(heartbeat.host_ip)
+           uuid = heartbeat.host_uuid,
+           name = str(heartbeat.host_uuid)
        ))
        
     db.add(models.SystemInfo(
@@ -109,7 +109,7 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
         db.commit()
     
     insert_data = models.Heartbeat(
-        ip = heartbeat.host_ip,
+        uuid = heartbeat.host_uuid,
         survival_container_cnt = len(heartbeat.containers),
         req_ip = req.client.host
     )
@@ -120,12 +120,10 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
     return
 
 def get_server_stats(db: Session, server_id: int, time_unit:str, call_back: callable = mean):
-     
-                    
-    # 1시간 마다 cpu 코어들의 평균을 내서 시간과 값의 리스트 형식으로 반환
+    # 단위 시간 마다 cpu 코어들의 평균을 내서 시간과 값의 리스트 형식으로 반환
     one_day_ago = datetime.now() - timedelta(days=1)
     
-    # 1시간 마다 각 CPU 코어별 평균을 계산
+    # 단위 시간 마다 각 CPU 코어별 평균을 계산
     query = db.query(
         func.date_trunc(time_unit, models.SystemInfo.timestamp).label('unit'),
         models.SystemInfo.cpu_core_usage
@@ -148,14 +146,58 @@ def get_server_stats(db: Session, server_id: int, time_unit:str, call_back: call
             result[unit][f"cpu{i+1}"].append(float(usage))
 
     # 각 시간대별로 CPU 코어의 평균 계산
-    final_result = []
+    cpu_result = []
     for unit, cpu_data in result.items():
         unit_result = {"time": unit.isoformat()}
         for cpu, values in cpu_data.items():
             unit_result[cpu] = call_back(values)
-        final_result.append(unit_result)
+        cpu_result.append(unit_result)
 
     # 시간순으로 정렬
-    final_result.sort(key=lambda x: x['time'])
-
-    return final_result
+    cpu_result.sort(key=lambda x: x['time'])
+    
+    network_result = []
+    # 단위시간마다 네트워크 사용량의 평균을 계산
+    query = db.query(
+        func.date_trunc(time_unit, models.SystemInfo.timestamp).label('unit'),
+        models.SystemInfo.net_recv_data_mb,
+        models.SystemInfo.net_send_data_mb
+    ).filter(
+        models.SystemInfo.server_id == server_id,
+        models.SystemInfo.timestamp >= one_day_ago
+    ).order_by('unit').all()
+    
+    
+    # 쿼리 결과를 record.unit를 기준으로 group_by 처리
+    temp = {}
+    network_result = []
+    for record in query:
+        temp[record.unit] = temp.get(record.unit, {"recv_data_mb": [], "sent_data_mb": []})
+        temp[record.unit]["recv_data_mb"].append(record.net_recv_data_mb)
+        temp[record.unit]["sent_data_mb"].append(record.net_send_data_mb)
+    
+    for unit, data in temp.items():
+        network_result.append({
+            "time": unit.isoformat(),
+            "recv_data_mb": call_back(data["recv_data_mb"]),
+            "sent_data_mb": call_back(data["sent_data_mb"])
+        })
+    
+    # for record in query:
+    #     unit = record.unit
+    #     recv_data = record.net_recv_data_mb
+    #     sent_data = record.net_send_data_mb
+        
+    #     network_result.append({
+    #         "time": unit.isoformat(),
+    #         "recv_data_mb": call_back(recv_data),
+    #         "sent_data_mb": call_back(sent_data)
+    #     })
+    
+    
+    return {
+        "cpu": cpu_result,
+        "network": network_result,
+        "memory": [],
+        "disk": []
+    }
