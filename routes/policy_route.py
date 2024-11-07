@@ -53,7 +53,10 @@ async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):
             HTTPException: 500 - 서버 내부 오류
     """
     content = await file.read()
-    policy = parse_yaml_raw_as(policy_schema.ServerPolicy, content) 
+    try:
+        policy = parse_yaml_raw_as(policy_schema.ServerPolicy, content) 
+    except Exception as e:
+        raise HTTPException(status_code=422, detail="Invalid yaml format")
     
     return {"containers": policy_crud.create_custom_policy(db, policy)}
 
