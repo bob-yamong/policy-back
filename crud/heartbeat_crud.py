@@ -48,7 +48,8 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
     for container in heartbeat.containers:
         container_info = db.query(models.Container).filter(models.Container.name == container.container_name).first()
         
-        removed_container_ids.remove(container_info.id)
+        if container_info and container_info.id in removed_container_ids:
+            removed_container_ids.remove(container_info.id)
         
         if not container_info:
             db.add(models.Container(
@@ -112,7 +113,7 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
         uuid = heartbeat.host_uuid,
         survival_container_cnt = len(heartbeat.containers),
         req_ip = req.client.host,
-        endpoint = req.policy_endpoint
+        endpoint = heartbeat.policy_endpoint
     )
     
     db.add(insert_data)
