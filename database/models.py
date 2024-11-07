@@ -68,7 +68,7 @@ class Tag(Base):
     id = mapped_column(BigInteger)
     name = mapped_column(String(255), nullable=False)
 
-    container: Mapped['Container'] = relationship('Container', secondary='Container_tag', back_populates='tag')
+    container: Mapped['Container'] = relationship('Container', secondary='ContainerTag', back_populates='tag')
 
 
 class Container(Base):
@@ -87,7 +87,7 @@ class Container(Base):
     removed_at = mapped_column(DateTime(True))
 
     server: Mapped['Server'] = relationship('Server', back_populates='containers')
-    tag: Mapped['Tag'] = relationship('Tag', secondary='Container_tag', back_populates='container')
+    tag: Mapped['Tag'] = relationship('Tag', secondary='ContainerTag', back_populates='container')
     InternalContainerId: Mapped[List['InternalContainerId']] = relationship('InternalContainerId', uselist=True, back_populates='container')
     LsmFilePolicy: Mapped[List['LsmFilePolicy']] = relationship('LsmFilePolicy', uselist=True, back_populates='container')
     LsmNetPolicy: Mapped[List['LsmNetPolicy']] = relationship('LsmNetPolicy', uselist=True, back_populates='container')
@@ -154,11 +154,11 @@ class ContainerSysInfo(Base):
 
 
 class ContainerTag(Base):
-    __tablename__ = 'Container_tag'
+    __tablename__ = 'ContainerTag'
     __table_args__ = (
         ForeignKeyConstraint(['container_id'], ['Container.id'], name='FK__Container'),
         ForeignKeyConstraint(['tag_id'], ['Tag.id'], name='FK__Tag'),
-        PrimaryKeyConstraint('container_id', 'tag_id', name='Container_tag_pkey')
+        PrimaryKeyConstraint('container_id', 'tag_id', name='ContainerTag_pkey')
     )
 
     container_id = mapped_column(BigInteger, nullable=False, primary_key=True)
