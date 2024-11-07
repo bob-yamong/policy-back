@@ -30,6 +30,7 @@ def get_server_stats(server_id: int, unit:heartbeat_schema.TimeUnit,
                     function_name: heartbeat_schema.funcList, 
                     db: Session=Depends(get_db)):
     """
+    (세부 사항 합의 필요)
     서버의 상태 정보를 반환합니다.
 
         Args:
@@ -87,12 +88,16 @@ def get_server_stats(server_id: int, unit:heartbeat_schema.TimeUnit,
 
 
 @router.get("/container/{container_id}")
-def get_container_stats(container_id: int, db: Session=Depends(get_db)):
+def get_container_stats(container_id: int, unit:heartbeat_schema.TimeUnit, 
+                    function_name: heartbeat_schema.funcList, db: Session=Depends(get_db)):
     """
+    (작업중 변경 사항 발생 가능성 있음)
     컨테이너의 상태 정보를 반환합니다.
 
         Args:
             container_id (int): 컨테이너의 id를 입력합니다.
+            unit (heartbeat_schema.TimeUnit): 시간의 주기를 입력합니다.
+            function_name (heartbeat_schema.funcList): 어떤 함수를 사용할지 입력합니다.
             db (_type_, optional): 서버에서 DI하는 정보입니다. Defaults to Depends(get_db).
             
         Returns:
@@ -105,7 +110,13 @@ def get_container_stats(container_id: int, db: Session=Depends(get_db)):
     if not container:
         raise HTTPException(status_code=404, detail="Container not found")
     
-    return container
+    if function_name not in funcList:
+        raise HTTPException(status_code=422, detail="Invalid function name")
+    
+    if unit not in TimeUnit:
+        raise HTTPException(status_code=422, detail="Invalid time unit")
+    
+    return heartbeat_crud.get_container_stats(db, container_id, unit.value, func_dict[function_name])
 
 
 
@@ -134,13 +145,13 @@ def add_heartbeat(req: Request, heartbeat: heartbeat_schema.InfoReq, db:Session=
 @router.get("/stream", response_class=StreamingResponse)
 async def get_server_stats():
     """
-        서버의 상태 정보를 스트리밍합니다.
+        서버와 내부의 컨테이너의 상태 정보를 스트리밍합니다.
         
         Args:
             None
         
         Returns:
-            StreamingResponse: 서버의 상태 정보를 스트리밍합니다.
+            StreamingResponse: 서버와 내부 컨테이너 상태 정보를 스트리밍합니다.
         
         Raises:
             None

@@ -182,22 +182,33 @@ def get_server_stats(db: Session, server_id: int, time_unit:str, call_back: call
             "recv_data_mb": call_back(data["recv_data_mb"]),
             "sent_data_mb": call_back(data["sent_data_mb"])
         })
-    
-    # for record in query:
-    #     unit = record.unit
-    #     recv_data = record.net_recv_data_mb
-    #     sent_data = record.net_send_data_mb
         
-    #     network_result.append({
-    #         "time": unit.isoformat(),
-    #         "recv_data_mb": call_back(recv_data),
-    #         "sent_data_mb": call_back(sent_data)
-    #     })
-    
-    
+    network_result.sort(key=lambda x: x['time'])
+
     return {
         "cpu": cpu_result,
         "network": network_result,
         "memory": [],
         "disk": []
     }
+    
+    
+def get_container_stats(db: Session, container_id: int, time_unit: str, call_back: callable = mean):
+    one_day_ago = datetime.now() - timedelta(days=1)
+    
+    cpu_usage = []
+    query = db.query(
+        func.date_trunc(time_unit, models.ContainerSysInfo.timestamp).label('unit'),
+        models.ContainerSysInfo.cpu_percent
+    ).filter(
+        models.ContainerSysInfo.container_id == container_id,
+        models.ContainerSysInfo.timestamp >= one_day_ago
+    ).order_by('unit').all()
+    
+    # 쿼리 결과를 record.unit를 기준으로 group_by 처리
+    temp = {}
+    for record in query:
+        temp[record.unit] = temp.get(record.unit, [])
+        temp[record.unit].append(record.cpu_percent)
+        
+    
