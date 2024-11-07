@@ -107,6 +107,27 @@ def get_container_policy(container_id: int, db: Session = Depends(get_db)) -> po
     """
     return policy_crud.get_container_policy(db, container_id)
 
+@router.get("/")
+def get_policy_list(db: Session = Depends(get_db)):
+    """
+    Get the list of policies.
+
+        Args:
+            db (Session, optional): Defaults to Depends(get_db).
+
+        Returns:
+            List[policy_schema.PolicyRes]: 정책 목록
+            
+        Raises:
+            HTTPException: 500 - 서버 내부 오류
+    """
+    return policy_crud.get_policy_list(db)
+
+@router.get("/{policy_id}", response_model=policy_schema.ServerPolicy)
+def get_policy_by_policy_id(policy_name: str, db: Session = Depends(get_db)):
+    return policy_crud.get_policy_by_policy_id(db, policy_name)
+
+
 # @router.patch("/rawtp/{server_id}/{container_id}")
 # def update_raw_tracepoint(server_id: int, container_id: int):
 #     return {"container": container_id}

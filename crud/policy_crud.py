@@ -143,6 +143,102 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
                                                                                                                    
     return insert_failed_policy
 
+def get_policy_list(db: Session):
+    return db.query(models.Policy).all()
+    
+def get_policy_by_policy_id(db, policy_id: int) -> policy_schema.ServerPolicy:
+    # 정책 존재 여부 확인
+    policy = db.query(models.Policy).filter(models.Policy.id == policy_id).first()
+    if not policy:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Policy not found")
+    
+    # 해당 정책과 연관된 모든 컨테이너 ID 수집
+    container_set = set()
+    container_set.update([c.container_id for c in db.query(models.RawTracePointPolicy).filter(models.RawTracePointPolicy.policy_id == policy.id).all()])
+    container_set.update([c.container_id for c in db.query(models.TracepointPolicy).filter(models.TracepointPolicy.policy_id == policy.id).all()])
+    container_set.update([c.container_id for c in db.query(models.LsmFilePolicy).filter(models.LsmFilePolicy.policy_id == policy.id).all()])
+    container_set.update([c.container_id for c in db.query(models.LsmNetPolicy).filter(models.LsmNetPolicy.policy_id == policy.id).all()])
+    container_set.update([c.container_id for c in db.query(models.LsmProcPolicy).filter(models.LsmProcPolicy.policy_id == policy.id).all()])
+    
+    # 기본 정책 데이터 구조 생성
+    policy_data = policy_schema.ServerPolicy(
+        api_version=policy.api_version,
+        name=policy.name,
+        containers=[]
+    )
+    
+    # 각 컨테이너에 대한 정책 정보 수집
+    for container_id in container_set:
+        container = db.query(models.Container).filter(models.Container.id == container_id).first()
+        
+        # Raw Tracepoint Policy 조회
+        raw_tp = db.query(models.RawTracePointPolicy).filter(
+            models.RawTracePointPolicy.policy_id == policy.id,
+            models.RawTracePointPolicy.container_id == container_id
+        ).first()
+        
+        # Tracepoint Policies 조회
+        tracepoints = db.query(models.TracepointPolicy).filter(
+            models.TracepointPolicy.policy_id == policy.id,
+            models.TracepointPolicy.container_id == container_id
+        ).all()
+        
+        # LSM File Policies 조회
+        file_policies = db.query(models.LsmFilePolicy).filter(
+            models.LsmFilePolicy.policy_id == policy.id,
+            models.LsmFilePolicy.container_id == container_id
+        ).all()
+        
+        # LSM Network Policies 조회
+        net_policies = db.query(models.LsmNetPolicy).filter(
+            models.LsmNetPolicy.policy_id == policy.id,
+            models.LsmNetPolicy.container_id == container_id
+        ).all()
+        
+        # LSM Process Policies 조회
+        proc_policies = db.query(models.LsmProcPolicy).filter(
+            models.LsmProcPolicy.policy_id == policy.id,
+            models.LsmProcPolicy.container_id == container_id
+        ).all()
+        
+        # 컨테이너별 정책 데이터 구성
+        policy_data.containers.append(
+            policy_schema.Policy(
+                container_name=container.name,
+                raw_tp=raw_tp.state if raw_tp else "off",
+                tracepoint_policy=policy_schema.TracepointPolicy(
+                    tracepoints=[tp.tracepoint for tp in tracepoints]
+                ),
+                lsm_policies=policy_schema.LSMPolicies(
+                    file=[
+                        {
+                            "path": fp.path,
+                            "flags": fp.flags,
+                            "uid": fp.uid
+                        } for fp in file_policies
+                    ],
+                    network=[
+                        {
+                            "ip": np.ip,
+                            "port": np.port,
+                            "protocol": np.protocol,
+                            "flags": np.flags,
+                            "uid": np.uid
+                        } for np in net_policies
+                    ],
+                    process=[
+                        {
+                            "comm": pp.comm,
+                            "flags": pp.flags,
+                            "uid": pp.uid
+                        } for pp in proc_policies
+                    ]
+                )
+            )
+        )
+    
+    return policy_data
+
 def get_server_policy(db: Session, server_id: int) -> policy_schema.ServerPolicy:
     server = db.query(models.Server).filter(models.Server.id == server_id).first()
     if not server:
