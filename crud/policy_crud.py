@@ -16,16 +16,16 @@ def create_custom_policy(db: Session, policy: policy_schema.ServerPolicy):
     
     # 기존 정책 확인
     policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
-    # if policy_data:
-    #     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Policy "{policy.name}" already exists')
-    # else:
-    #     db.add(models.Policy(
-    #         name=policy.name,
-    #         api_version=policy.api_version
-    #     ))
-    #     db.commit()
+    if policy_data:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Policy "{policy.name}" already exists')
+    else:
+        db.add(models.Policy(
+            name=policy.name,
+            api_version=policy.api_version
+        ))
+        db.commit()
         
-    #     policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
+        policy_data = db.query(models.Policy).filter(models.Policy.name == policy.name).first()
     
     # 정책 생성
     insert_failed_policy = {}
