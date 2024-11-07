@@ -4,9 +4,20 @@ from datetime import datetime
 # ==================== Policy Data ====================
 
 class TracepointPolicy(BaseModel):
+    """
+    트레이스포인트 정책을 저장합니다
+
+    tracepoints: list[str] - 트레이스포인트 목록
+    """
     tracepoints: list[str] = []
 
 class LSMPolicy(BaseModel):
+    """
+    LSM 정책을 저장합니다
+
+    flags: list[str] - LSM 정책에 적용될 플래그 목록
+    uid: list[int] - LSM 정책에 적용될 uid 목록
+    """
     flags: list[str] = []
     uid: list[int] = []
 
@@ -27,6 +38,11 @@ class LSMPolicies(BaseModel):
     process: list[LSMProcessPolicy]
 
 class Policy(BaseModel):
+    """
+    제약 사항
+
+    raw_tp의 길이는 10글자를 넘기지 않습니다.
+    """
     container_name: str
     raw_tp: str
     tracepoint_policy: TracepointPolicy

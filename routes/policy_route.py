@@ -53,12 +53,20 @@ async def create_upload_policy(file: UploadFile, db: Session = Depends(get_db)):
             HTTPException: 500 - 서버 내부 오류
     """
     content = await file.read()
-    try:
-        policy = parse_yaml_raw_as(policy_schema.ServerPolicy, content) 
-    except Exception as e:
-        raise HTTPException(status_code=422, detail="Invalid yaml format")
+    policy = parse_yaml_raw_as(policy_schema.ServerPolicy, content) 
     
     return {"containers": policy_crud.create_custom_policy(db, policy)}
+
+@router.post("/apply/{server_id}")
+def apply_policy(server_id: int, db: Session=Depends(get_db)):
+    """
+    정책을 server_id 서버에 전달합니다.
+
+    Args:
+        server_id (int): 정책을 전달 받을 서버의 id
+        db (Session, optional): Defaults to Depends(get_db).
+    """
+    return policy_crud.apply_policy(db, server_id)
 
 # Read
 @router.get("/server/{server_id}", response_model=policy_schema.PolicyRes)

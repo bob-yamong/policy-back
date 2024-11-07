@@ -1,11 +1,16 @@
+import requests
+from io import StringIO
 from sqlalchemy.orm import Session
 from fastapi import Request
 from fastapi import HTTPException
 from starlette import status
+from datetime import datetime
+
+from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
+from ruamel.yaml import YAML
 
 from schema import server_schema, policy_schema, container_schema
 from database import models
-
 from crud import container_crud
 from crud.server_crud import get_server_info_from_uuid, create_server
 
@@ -267,3 +272,76 @@ def check_conflict(db: Session, server_id: int, container_id: int | None = None)
     return {
         "conflict": False
     }
+    
+
+def send_policy_to_server(endpoint: str, data: policy_schema.ServerPolicy) -> int:
+    """Send policy to server
+
+    Args:
+        endpoint (str): 서버 주소
+        data (policy_schema.ServerPolicy): 정책
+
+    Returns:
+        int: 정책 적용 결과 (HTTP Status Code)
+    """
+    # make pydantic model to yaml
+    yaml_content = to_yaml_str(data)
+    files = {
+        'files': ('policy.yaml', yaml_content, 'text/yaml')
+    }
+    
+    # request to server yaml file
+    res = requests.post(
+        endpoint, 
+        files=files
+    )
+    print(res.json())
+    res.raise_for_status()
+    return res.json()
+    
+
+
+def apply_policy(db: Session, server_id: int):
+    # server 존재 확인
+    server = db.query(models.Server).filter(models.Server.id == server_id).first()
+    
+    if not server:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Server not found")
+    
+    # server id 의 정책을 가져옵니다
+    policies = get_server_policy(db, server_id)["policies"]
+    
+    
+    server_policy = policy_schema.ServerPolicy(
+        api_version="api_version:",
+        name=f"{datetime.now().isoformat()}_build_policy",
+        containers=[]
+    )
+    
+    for policy in policies:
+        policy_data = policy_schema.Policy(
+            container_name=policy["policy"]["container_name"],
+            raw_tp=policy["policy"]["raw_tp"],
+            tracepoint_policy=policy_schema.TracepointPolicy(
+                tracepoints=policy["policy"]["tracepoint_policy"]["tracepoints"]
+            ),
+            lsm_policies=policy_schema.LSMPolicies(
+                file=policy["policy"]["lsm_policies"]["file"],
+                network=policy["policy"]["lsm_policies"]["network"],
+                process=policy["policy"]["lsm_policies"]["process"]
+            )
+        )
+        server_policy.containers.append(policy_data)
+        
+    server_heartbeat = db.query(models.Heartbeat).filter(models.Heartbeat.uuid == server.uuid).order_by(models.Heartbeat.timestamp.desc()).first()
+    
+    if not server_heartbeat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Server endpoint not found")
+    
+    endpoint = server_heartbeat.endpoint
+    
+    ret = send_policy_to_server(endpoint, server_policy)
+    
+    return ret
+    
+    
