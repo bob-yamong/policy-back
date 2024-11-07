@@ -111,7 +111,8 @@ def add_heartbeat(db: Session, req: Request, heartbeat: heartbeat_schema.InfoReq
     insert_data = models.Heartbeat(
         uuid = heartbeat.host_uuid,
         survival_container_cnt = len(heartbeat.containers),
-        req_ip = req.client.host
+        req_ip = req.client.host,
+        endpoint = req.policy_endpoint
     )
     
     db.add(insert_data)

@@ -97,4 +97,5 @@ class InfoReq(BaseModel):
     containers: list[ContainerInfo]
     host: HostInfo
     host_uuid: str
+    policy_endpoint: str
     timestamp: datetime

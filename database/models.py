@@ -21,6 +21,7 @@ class Heartbeat(Base):
     timestamp = mapped_column(DateTime(True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     survival_container_cnt = mapped_column(Integer, nullable=False, server_default=text('0'))
     req_ip = mapped_column(String(255), nullable=False)
+    endpoint = mapped_column(String(255), nullable=False)
 
 
 class Policy(Base):
