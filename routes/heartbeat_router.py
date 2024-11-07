@@ -120,7 +120,7 @@ def get_container_stats(container_id: int, unit:heartbeat_schema.TimeUnit,
 
 
 
-@router.post("/heartbeat", status_code=status.HTTP_201_CREATED)
+@router.post("/heartbeat", response_model=dict)
 def add_heartbeat(req: Request, heartbeat: heartbeat_schema.InfoReq, db:Session=Depends(get_db)) -> str:
     """
     서버의 현재 상태를 기록합니다.
@@ -139,7 +139,7 @@ def add_heartbeat(req: Request, heartbeat: heartbeat_schema.InfoReq, db:Session=
     heartbeat_crud.add_heartbeat(db, req, heartbeat)
     queue.append(heartbeat)
     
-    return req.client.host
+    return {"req_ip": req.client.host}
 
 # Read server stats info with streaming
 @router.get("/stream", response_class=StreamingResponse)
